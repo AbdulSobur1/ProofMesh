@@ -1,7 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { SESSION_COOKIE } from '@/lib/auth'
-import { verifySessionToken } from '@/lib/services/session'
 
 const authenticatedPages = ['/dashboard', '/submit', '/profile', '/proof']
 const publicAuthPages = ['/', '/login', '/signup']
@@ -18,9 +16,7 @@ export async function proxy(request: NextRequest) {
     req: request,
     secret: process.env.NEXTAUTH_SECRET ?? process.env.SESSION_SECRET ?? 'proofmesh-dev-secret',
   })
-  const legacySession = request.cookies.get(SESSION_COOKIE)?.value
-  const legacyToken = legacySession ? verifySessionToken(legacySession) : null
-  const isAuthenticated = Boolean(token?.sub || legacyToken)
+  const isAuthenticated = Boolean(token?.sub)
 
   if (isMatch(pathname, authApiPrefixes)) {
     return NextResponse.next()
@@ -28,9 +24,7 @@ export async function proxy(request: NextRequest) {
 
   if (isMatch(pathname, authenticatedPages)) {
     if (!isAuthenticated) {
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('from', pathname)
-      return NextResponse.redirect(loginUrl)
+      return NextResponse.redirect(new URL('/', request.url))
     }
     return NextResponse.next()
   }
@@ -66,3 +60,4 @@ export const config = {
     '/api/reputation/:path*',
   ],
 }
+

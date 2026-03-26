@@ -4,11 +4,8 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import { randomUUID } from 'crypto'
 import { prisma } from '@/lib/db'
-import { SESSION_COOKIE } from '@/lib/auth'
 import { hashPassword } from '@/lib/services/password'
 import { verifyEmailVerificationChallenge } from '@/lib/services/email-verification'
-import { verifySessionToken } from '@/lib/services/session'
-import { cookies } from 'next/headers'
 
 const SESSION_SECRET = process.env.NEXTAUTH_SECRET ?? process.env.SESSION_SECRET ?? 'proofmesh-dev-secret'
 
@@ -150,4 +147,5 @@ export async function getCurrentToken(request: Request) {
     secret: SESSION_SECRET,
   })
 }
+
 
