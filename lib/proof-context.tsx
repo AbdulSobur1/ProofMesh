@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { signOut as nextSignOut } from 'next-auth/react'
 import { MeResponse, ProfileResponse, Proof, Reputation, SessionUser } from '@/lib/types'
 
@@ -32,6 +32,7 @@ const emptyReputation: Reputation = {
 
 export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter()
+  const pathname = usePathname()
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null)
   const [proofs, setProofs] = useState<Proof[]>([])
   const [reputation, setReputation] = useState<Reputation>(emptyReputation)
@@ -54,7 +55,7 @@ export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setError(null)
 
     try {
-      const response = await fetch('/api/auth/me')
+      const response = await fetch('/api/auth/me', { cache: 'no-store' })
       if (!response.ok) {
         throw new Error('Failed to load session')
       }
@@ -80,7 +81,7 @@ export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     refresh()
-  }, [refresh])
+  }, [refresh, pathname])
 
   const addProof = async (proof: AddProofInput): Promise<Proof> => {
     const response = await fetch('/api/proofs', {
@@ -142,3 +143,4 @@ export const useProofs = () => {
   }
   return context
 }
+
