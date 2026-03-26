@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -17,18 +17,27 @@ model User {
 }
 
 model Proof {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  link        String?
-  score       Int
-  feedback    String?
-  tags        String
-  txHash      String
-  createdAt   DateTime @default(now())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  id                     String   @id @default(cuid())
+  title                  String
+  description            String
+  link                   String?
+  profession             String   @default("software_engineering")
+  proofType              String   @default("project")
+  outcomeSummary         String?
+  score                  Int
+  feedback               String?
+  tags                   String
+  txHash                 String
+  verificationStatus     String   @default("needs_review")
+  verificationConfidence Int      @default(50)
+  verificationSignals    String   @default("[]")
+  verifiedAt             DateTime?
+  createdAt              DateTime @default(now())
+  userId                 String
+  user                   User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([createdAt])
+  @@index([profession])
+  @@index([verificationStatus])
 }

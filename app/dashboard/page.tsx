@@ -58,7 +58,12 @@ export default function DashboardPage() {
             {isLoading ? (
               <StatsSkeleton />
             ) : (
-              <ReputationSection averageScore={reputation.averageScore} totalProofs={reputation.totalProofs} />
+              <ReputationSection
+                averageScore={reputation.averageScore}
+                totalProofs={reputation.totalProofs}
+                verifiedProofs={reputation.verifiedProofs}
+                averageConfidence={reputation.averageConfidence}
+              />
             )}
           </div>
 

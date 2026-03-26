@@ -1,8 +1,10 @@
 import Link from 'next/link'
-import { Calendar, ExternalLink, Hash, Sparkles } from 'lucide-react'
+import { Calendar, ExternalLink, Hash, ShieldCheck, Sparkles } from 'lucide-react'
 import { Proof } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
+import { PROFESSION_LABELS, PROOF_TYPE_LABELS, type ProofProfession, type ProofType } from '@/lib/proof-taxonomy'
+import { getVerificationMeta } from '@/lib/services/verification'
 
 interface ProofCardProps {
   proof: Proof
@@ -34,14 +36,28 @@ export function ProofCard({ proof }: ProofCardProps) {
     return `${Math.floor(days / 30)} months ago`
   })()
 
+  const professionLabel = PROFESSION_LABELS[proof.profession as ProofProfession] ?? proof.profession
+  const proofTypeLabel = PROOF_TYPE_LABELS[proof.proofType as ProofType] ?? proof.proofType
+  const verificationMeta = getVerificationMeta(proof.verificationStatus)
+
   return (
     <Card className="group rounded-[2rem] border border-border/60 p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_20px_50px_rgba(2,8,23,0.08)]">
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0 flex-1 space-y-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
               <Sparkles className="size-3.5 text-primary" />
               AI reviewed
+              <Badge variant="secondary" className="rounded-full border border-border/60 bg-background/70 text-foreground normal-case tracking-normal">
+                {professionLabel}
+              </Badge>
+              <Badge variant="secondary" className="rounded-full border border-border/60 bg-background/70 text-foreground normal-case tracking-normal">
+                {proofTypeLabel}
+              </Badge>
+              <Badge variant="secondary" className={`rounded-full border normal-case tracking-normal ${verificationMeta.tone}`}>
+                <ShieldCheck className="mr-1 size-3.5" />
+                {verificationMeta.label}
+              </Badge>
             </div>
             <h3 className="mt-3 text-lg font-semibold text-foreground transition-colors group-hover:text-primary">
               {proof.title}
@@ -50,6 +66,33 @@ export function ProofCard({ proof }: ProofCardProps) {
               {proof.description}
             </p>
           </div>
+
+          {proof.outcomeSummary ? (
+            <div className="rounded-2xl border border-border/60 bg-background/60 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Outcome summary</p>
+              <p className="mt-2 text-sm leading-6 text-foreground/80">{proof.outcomeSummary}</p>
+            </div>
+          ) : null}
+
+          {proof.verificationSignals.length > 0 ? (
+            <div className="rounded-2xl border border-border/60 bg-background/60 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Trust signals</p>
+                <span className="text-xs font-medium text-primary">{proof.verificationConfidence}% confidence</span>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {proof.verificationSignals.map((signal) => (
+                  <Badge
+                    key={`${proof.id}-${signal.label}`}
+                    variant="secondary"
+                    className="rounded-full border border-border/60 bg-background/70 text-foreground"
+                  >
+                    {signal.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap gap-2">
             {proof.tags.map((tag) => (

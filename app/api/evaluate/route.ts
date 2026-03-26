@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { evaluateProof } from '@/lib/services/ai-evaluator'
+import { PROOF_PROFESSIONS, PROOF_TYPES } from '@/lib/proof-taxonomy'
 
 const evaluateSchema = z.object({
   title: z.string().min(2),
   description: z.string().min(10),
   link: z.string().url().optional().or(z.literal('')),
+  profession: z.enum(PROOF_PROFESSIONS),
+  proofType: z.enum(PROOF_TYPES),
+  outcomeSummary: z.string().max(240).optional().or(z.literal('')),
 })
 
 export async function POST(request: Request) {
@@ -17,10 +21,13 @@ export async function POST(request: Request) {
       title: input.title,
       description: input.description,
       link: input.link || undefined,
+      profession: input.profession,
+      proofType: input.proofType,
+      outcomeSummary: input.outcomeSummary || undefined,
     })
 
     return NextResponse.json(result)
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         error: 'Invalid request payload',

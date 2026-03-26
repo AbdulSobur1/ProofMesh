@@ -3,10 +3,17 @@ export type TagFrequency = {
   count: number
 }
 
+export type VerificationSignal = {
+  label: string
+  strength: 'low' | 'medium' | 'high'
+}
+
 export type Reputation = {
   averageScore: number
   totalProofs: number
   tagFrequency: TagFrequency[]
+  verifiedProofs: number
+  averageConfidence: number
 }
 
 export type Proof = {
@@ -14,10 +21,17 @@ export type Proof = {
   title: string
   description: string
   link: string | null
+  profession: string
+  proofType: string
+  outcomeSummary: string | null
   score: number
   feedback: string | null
   tags: string[]
   txHash: string
+  verificationStatus: string
+  verificationConfidence: number
+  verificationSignals: VerificationSignal[]
+  verifiedAt: string | null
   createdAt: string
   userId?: string
 }

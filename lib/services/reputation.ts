@@ -1,6 +1,7 @@
-import { Proof } from '@/lib/types'
+import { Proof, Reputation } from '@/lib/types'
+import { averageConfidence, countVerifiedProofs } from '@/lib/services/verification'
 
-export const calculateReputation = (proofs: Proof[]) => {
+export const calculateReputation = (proofs: Proof[]): Reputation => {
   const totalProofs = proofs.length
   const totalScore = proofs.reduce((sum, proof) => sum + proof.score, 0)
   const averageScore = totalProofs === 0 ? 0 : Math.round((totalScore / totalProofs) * 10) / 10
@@ -20,5 +21,7 @@ export const calculateReputation = (proofs: Proof[]) => {
     averageScore,
     totalProofs,
     tagFrequency,
+    verifiedProofs: countVerifiedProofs(proofs),
+    averageConfidence: averageConfidence(proofs),
   }
 }

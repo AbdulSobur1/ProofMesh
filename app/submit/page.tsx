@@ -12,6 +12,15 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Upload, CheckCircle2, Lightbulb, ArrowLeft, Sparkles } from 'lucide-react'
+import {
+  PROFESSION_GUIDANCE,
+  PROFESSION_LABELS,
+  PROOF_PROFESSIONS,
+  PROOF_TYPE_LABELS,
+  PROOF_TYPES,
+  type ProofProfession,
+  type ProofType,
+} from '@/lib/proof-taxonomy'
 
 export default function SubmitProof() {
   const router = useRouter()
@@ -20,12 +29,19 @@ export default function SubmitProof() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
+    profession: 'software_engineering' as ProofProfession,
+    proofType: 'project' as ProofType,
     title: '',
     description: '',
+    outcomeSummary: '',
     link: '',
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const guidance = PROFESSION_GUIDANCE[formData.profession]
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -48,9 +64,19 @@ export default function SubmitProof() {
         title: formData.title,
         description: formData.description,
         link: formData.link || undefined,
+        profession: formData.profession,
+        proofType: formData.proofType,
+        outcomeSummary: formData.outcomeSummary || undefined,
       })
       setSuccess(true)
-      setFormData({ title: '', description: '', link: '' })
+      setFormData({
+        profession: 'software_engineering',
+        proofType: 'project',
+        title: '',
+        description: '',
+        outcomeSummary: '',
+        link: '',
+      })
 
       setTimeout(() => {
         router.push('/dashboard')
@@ -83,13 +109,13 @@ export default function SubmitProof() {
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground">
                   <Sparkles className="size-3.5 text-primary" />
-                  AI-evaluated submission
+                  Profession-aware AI evaluation
                 </div>
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                  Submit a proof that can stand on its own.
+                  Submit work that proves what you can actually do.
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  Keep it specific, verifiable, and honest. The cleaner the evidence, the stronger the reputation signal.
+                  ProofMesh now evaluates technical, analytical, creative, and operational work with more context, so your profile reflects real capability instead of generic claims.
                 </p>
               </div>
             </div>
@@ -104,7 +130,7 @@ export default function SubmitProof() {
                       <CheckCircle2 className="size-8 text-emerald-400" />
                     </div>
                   </div>
-                  <h3 className="text-2xl font-semibold text-foreground mb-2">Proof submitted</h3>
+                  <h3 className="mb-2 text-2xl font-semibold text-foreground">Proof submitted</h3>
                   <p className="text-sm leading-6 text-muted-foreground">
                     Your submission is being evaluated now. Redirecting to dashboard...
                   </p>
@@ -118,6 +144,42 @@ export default function SubmitProof() {
                       </div>
                     ) : null}
 
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-foreground">Profession</label>
+                        <select
+                          name="profession"
+                          value={formData.profession}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="h-11 w-full rounded-xl border border-input bg-card/70 px-4 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        >
+                          {PROOF_PROFESSIONS.map((profession) => (
+                            <option key={profession} value={profession}>
+                              {PROFESSION_LABELS[profession]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-foreground">Proof type</label>
+                        <select
+                          name="proofType"
+                          value={formData.proofType}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="h-11 w-full rounded-xl border border-input bg-card/70 px-4 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        >
+                          {PROOF_TYPES.map((proofType) => (
+                            <option key={proofType} value={proofType}>
+                              {PROOF_TYPE_LABELS[proofType]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <label className="block text-sm font-medium text-foreground">
                         Proof title <span className="text-primary">*</span>
@@ -127,7 +189,7 @@ export default function SubmitProof() {
                         name="title"
                         value={formData.title}
                         onChange={handleChange}
-                        placeholder="Built a secure React component library"
+                        placeholder={guidance.titlePlaceholder}
                         disabled={isLoading}
                       />
                     </div>
@@ -140,8 +202,22 @@ export default function SubmitProof() {
                         name="description"
                         value={formData.description}
                         onChange={handleChange}
-                        placeholder="Describe what you built, how it works, and why it matters."
+                        placeholder={guidance.descriptionPlaceholder}
                         rows={7}
+                        disabled={isLoading}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-foreground">
+                        Outcome summary <span className="text-muted-foreground font-normal">(optional)</span>
+                      </label>
+                      <Textarea
+                        name="outcomeSummary"
+                        value={formData.outcomeSummary}
+                        onChange={handleChange}
+                        placeholder={guidance.outcomePlaceholder}
+                        rows={3}
                         disabled={isLoading}
                       />
                     </div>
@@ -155,7 +231,7 @@ export default function SubmitProof() {
                         name="link"
                         value={formData.link}
                         onChange={handleChange}
-                        placeholder="https://github.com/your-repo"
+                        placeholder="https://example.com/case-study-or-work-sample"
                         disabled={isLoading}
                       />
                     </div>
@@ -187,12 +263,12 @@ export default function SubmitProof() {
               <Card className="rounded-[2rem] border border-border/60 p-6">
                 <div className="flex items-center gap-2">
                   <Lightbulb className="size-4 text-primary" />
-                  <h3 className="font-semibold text-foreground">Tips for better evaluation</h3>
+                  <h3 className="font-semibold text-foreground">Tips for {PROFESSION_LABELS[formData.profession]}</h3>
                 </div>
                 <ul className="mt-4 space-y-3 text-sm leading-6 text-muted-foreground">
-                  <li>Be specific about your role and contribution.</li>
-                  <li>Include technologies, links, and measurable outcomes.</li>
-                  <li>Keep the description concrete and easy to verify.</li>
+                  {guidance.tips.map((tip) => (
+                    <li key={tip}>{tip}</li>
+                  ))}
                 </ul>
               </Card>
 

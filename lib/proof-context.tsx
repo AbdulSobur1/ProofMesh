@@ -4,11 +4,15 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut as nextSignOut } from 'next-auth/react'
 import { MeResponse, ProfileResponse, Proof, Reputation, SessionUser } from '@/lib/types'
+import { type ProofProfession, type ProofType } from '@/lib/proof-taxonomy'
 
 interface AddProofInput {
   title: string
   description: string
   link?: string
+  profession: ProofProfession
+  proofType: ProofType
+  outcomeSummary?: string
 }
 
 interface ProofContextType {
@@ -28,6 +32,8 @@ const emptyReputation: Reputation = {
   averageScore: 0,
   totalProofs: 0,
   tagFrequency: [],
+  verifiedProofs: 0,
+  averageConfidence: 0,
 }
 
 export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -40,7 +46,7 @@ export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [error, setError] = useState<string | null>(null)
 
   const loadProfile = useCallback(async (username: string) => {
-    const response = await fetch(`/api/profile/${encodeURIComponent(username)}`)
+    const response = await fetch(`/api/profile/${encodeURIComponent(username)}`, { cache: 'no-store' })
     if (!response.ok) {
       throw new Error('Failed to load profile data')
     }
@@ -91,6 +97,9 @@ export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         title: proof.title,
         description: proof.description,
         link: proof.link,
+        profession: proof.profession,
+        proofType: proof.proofType,
+        outcomeSummary: proof.outcomeSummary,
       }),
     })
 
@@ -143,4 +152,3 @@ export const useProofs = () => {
   }
   return context
 }
-

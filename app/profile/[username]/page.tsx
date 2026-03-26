@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { use } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Code2, ShieldCheck, Sparkles, Trophy, User, Zap } from 'lucide-react'
+import { ArrowRight, Code2, ShieldCheck, Trophy, User, Zap } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { ProofCard } from '@/components/proof-card'
@@ -61,6 +61,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     averageScore: 0,
     totalProofs: 0,
     tagFrequency: [],
+    verifiedProofs: 0,
+    averageConfidence: 0,
   }
 
   const proofs = useMemo(() => data?.proofs ?? [], [data])
@@ -129,7 +131,12 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             {isLoading ? (
               <StatsSkeleton />
             ) : (
-              <ReputationSection averageScore={reputation.averageScore} totalProofs={reputation.totalProofs} />
+              <ReputationSection
+                averageScore={reputation.averageScore}
+                totalProofs={reputation.totalProofs}
+                verifiedProofs={reputation.verifiedProofs}
+                averageConfidence={reputation.averageConfidence}
+              />
             )}
           </div>
 
@@ -138,8 +145,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground">Top skill tags</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Most frequent across verified proof.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Most frequent across submitted proof.</p>
                 </div>
+                <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                  {reputation.verifiedProofs} trusted
+                </Badge>
               </div>
               {reputation.tagFrequency.length === 0 ? (
                 <p className="mt-6 text-sm text-muted-foreground">No tags yet.</p>
@@ -171,7 +181,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   ? 'Loading proofs...'
                   : proofs.length === 0
                     ? 'No proofs submitted yet'
-                    : `${proofs.length} proof${proofs.length !== 1 ? 's' : ''} verified`}
+                    : `${proofs.length} proof${proofs.length !== 1 ? 's' : ''} submitted • ${reputation.verifiedProofs} trusted`}
               </p>
             </div>
 
