@@ -106,7 +106,10 @@ export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }
 
   const signOut = async () => {
-    await nextSignOut({ callbackUrl: '/' })
+    await Promise.all([
+      fetch('/api/auth/logout', { method: 'POST' }).catch(() => null),
+      nextSignOut({ callbackUrl: '/' }),
+    ])
     setCurrentUser(null)
     setProofs([])
     setReputation(emptyReputation)

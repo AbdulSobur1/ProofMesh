@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
+import { SESSION_COOKIE } from '@/lib/auth'
+import { verifySessionToken } from '@/lib/services/session'
 
 const authenticatedPages = ['/dashboard', '/submit', '/profile', '/proof']
 const publicAuthPages = ['/', '/login', '/signup']
@@ -16,13 +18,16 @@ export async function proxy(request: NextRequest) {
     req: request,
     secret: process.env.NEXTAUTH_SECRET ?? process.env.SESSION_SECRET ?? 'proofmesh-dev-secret',
   })
+  const legacySession = request.cookies.get(SESSION_COOKIE)?.value
+  const legacyToken = legacySession ? verifySessionToken(legacySession) : null
+  const isAuthenticated = Boolean(token?.sub || legacyToken)
 
   if (isMatch(pathname, authApiPrefixes)) {
     return NextResponse.next()
   }
 
   if (isMatch(pathname, authenticatedPages)) {
-    if (!token?.sub) {
+    if (!isAuthenticated) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('from', pathname)
       return NextResponse.redirect(loginUrl)
@@ -31,14 +36,14 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isMatch(pathname, publicAuthPages)) {
-    if (token?.sub) {
+    if (isAuthenticated) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     return NextResponse.next()
   }
 
   if (isMatch(pathname, protectedApiPrefixes)) {
-    if (!token?.sub) {
+    if (!isAuthenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return NextResponse.next()
