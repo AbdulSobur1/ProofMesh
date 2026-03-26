@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
@@ -33,6 +33,24 @@ export default function SignupPage() {
   const [devCode, setDevCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [providerLoading, setProviderLoading] = useState<'google' | 'apple' | null>(null)
+  const [availableProviders, setAvailableProviders] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const response = await fetch('/api/auth/providers')
+        const data = (await response.json()) as Record<string, unknown>
+        setAvailableProviders({
+          google: Boolean(data.google),
+          apple: Boolean(data.apple),
+        })
+      } catch {
+        setAvailableProviders({})
+      }
+    }
+
+    loadProviders()
+  }, [])
 
   const handleSendCode = async () => {
     const normalizedEmail = email.trim()
@@ -134,6 +152,9 @@ export default function SignupPage() {
     setProviderLoading(null)
   }
 
+  const googleReady = availableProviders.google ?? true
+  const appleReady = availableProviders.apple ?? true
+
   return (
     <div className="min-h-screen bg-background">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.15),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.08),transparent_30%)]" />
@@ -192,7 +213,7 @@ export default function SignupPage() {
                   variant="outline"
                   className="h-12 w-full justify-center rounded-2xl"
                   onClick={() => startOAuth('google')}
-                  disabled={loading || providerLoading !== null}
+                  disabled={loading || providerLoading !== null || !googleReady}
                 >
                   {providerLoading === 'google' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   Continue with Google
@@ -202,7 +223,7 @@ export default function SignupPage() {
                   variant="outline"
                   className="h-12 w-full justify-center rounded-2xl"
                   onClick={() => startOAuth('apple')}
-                  disabled={loading || providerLoading !== null}
+                  disabled={loading || providerLoading !== null || !appleReady}
                 >
                   {providerLoading === 'apple' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   Continue with Apple

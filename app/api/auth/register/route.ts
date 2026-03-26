@@ -6,24 +6,29 @@ import { createSessionToken } from '@/lib/services/session'
 import { SESSION_COOKIE } from '@/lib/auth'
 
 const registerSchema = z.object({
-  username: z.string().min(3).max(24).regex(/^[a-zA-Z0-9_-]+$/, 'Use letters, numbers, underscores, or dashes'),
+  username: z.string().min(3).max(24).regex(/^[a-zA-Z0-9_-]+$/, 'Use letters, numbers, underscores, or dashes').optional(),
+  email: z.string().email().optional(),
   password: z.string().min(8).max(72),
+}).refine((value) => Boolean(value.username || value.email), {
+  message: 'Username or email is required',
+  path: ['username'],
 })
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const input = registerSchema.parse(body)
+    const identifier = (input.email ?? input.username ?? '').trim().toLowerCase()
 
-    const existing = await prisma.user.findUnique({ where: { username: input.username } })
+    const existing = await prisma.user.findUnique({ where: { username: identifier } })
     if (existing) {
-      return NextResponse.json({ error: 'Username already exists' }, { status: 409 })
+      return NextResponse.json({ error: 'Account already exists' }, { status: 409 })
     }
 
     const user = await prisma.user.create({
       data: {
-        username: input.username,
-        passwordHash: hashPassword(input.password),
+        username: identifier,
+        passwordHash: await hashPassword(input.password),
       },
       select: { username: true, createdAt: true },
     })

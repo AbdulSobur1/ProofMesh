@@ -6,8 +6,12 @@ import { createSessionToken } from '@/lib/services/session'
 import { SESSION_COOKIE } from '@/lib/auth'
 
 const loginSchema = z.object({
-  username: z.string().min(3).max(24),
+  username: z.string().min(3).max(24).optional(),
+  email: z.string().email().optional(),
   password: z.string().min(8).max(72),
+}).refine((value) => Boolean(value.username || value.email), {
+  message: 'Username or email is required',
+  path: ['username'],
 })
 
 export async function POST(request: Request) {
@@ -15,8 +19,10 @@ export async function POST(request: Request) {
     const body = await request.json()
     const input = loginSchema.parse(body)
 
+    const identifier = (input.email ?? input.username ?? '').trim().toLowerCase()
+
     const user = await prisma.user.findUnique({
-      where: { username: input.username },
+      where: { username: identifier },
     })
 
     if (!user || !verifyPassword(input.password, user.passwordHash)) {
