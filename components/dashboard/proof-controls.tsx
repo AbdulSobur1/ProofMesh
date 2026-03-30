@@ -11,10 +11,10 @@ interface ProofControlsProps {
   selectedTag: string
   onTagChange: (value: string) => void
   sortMode: ProofSortMode
-  onSortChange: (value: ProofSortMode) => void
-  availableTags: string[]
-  minimumScore: number
-  onMinimumScoreChange: (value: number) => void
+  onSortModeChange: (value: ProofSortMode) => void
+  tags: Array<{ tag: string }>
+  minScore: number
+  onMinScoreChange: (value: number) => void
 }
 
 export function ProofControls({
@@ -23,10 +23,10 @@ export function ProofControls({
   selectedTag,
   onTagChange,
   sortMode,
-  onSortChange,
-  availableTags,
-  minimumScore,
-  onMinimumScoreChange,
+  onSortModeChange,
+  tags,
+  minScore,
+  onMinScoreChange,
 }: ProofControlsProps) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_12px_40px_rgba(2,6,23,0.18)] backdrop-blur">
@@ -46,17 +46,17 @@ export function ProofControls({
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
-            variant={sortMode === 'recent' ? 'default' : 'outline'}
+            variant={sortMode === 'newest' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onSortChange('recent')}
+            onClick={() => onSortModeChange('newest')}
           >
             Recent
           </Button>
           <Button
             type="button"
-            variant={sortMode === 'top' ? 'default' : 'outline'}
+            variant={sortMode === 'highest' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onSortChange('top')}
+            onClick={() => onSortModeChange('highest')}
           >
             Top Score
           </Button>
@@ -64,7 +64,7 @@ export function ProofControls({
             type="button"
             variant={sortMode === 'oldest' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onSortChange('oldest')}
+            onClick={() => onSortModeChange('oldest')}
           >
             Oldest
           </Button>
@@ -84,7 +84,7 @@ export function ProofControls({
         >
           All
         </Button>
-        {availableTags.slice(0, 6).map((tag) => (
+        {tags.slice(0, 6).map(({ tag }) => (
           <Button
             type="button"
             key={tag}
@@ -99,8 +99,8 @@ export function ProofControls({
           <Sparkles className="size-3.5 text-primary" />
           <span className="text-xs font-medium text-muted-foreground">Min score</span>
           <select
-            value={minimumScore}
-            onChange={(event) => onMinimumScoreChange(Number(event.target.value))}
+            value={minScore}
+            onChange={(event) => onMinScoreChange(Number(event.target.value))}
             className="bg-transparent text-xs font-semibold text-foreground outline-none"
           >
             <option value={0}>Any</option>

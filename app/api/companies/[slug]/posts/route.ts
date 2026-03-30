@@ -19,8 +19,9 @@ const authorSelect = {
 
 export async function POST(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await params
   const token = await getCurrentToken(request)
   const currentUserId = token?.sub
 
@@ -32,7 +33,7 @@ export async function POST(
     where: {
       userId: currentUserId,
       company: {
-        slug: params.slug,
+        slug,
       },
     },
     include: {

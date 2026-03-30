@@ -11,8 +11,9 @@ const updateSchema = z.object({
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
+  const { reportId } = await params
   const token = await getCurrentToken(request)
   const adminUser = token?.sub
     ? await prisma.user.findUnique({
@@ -26,7 +27,7 @@ export async function PATCH(
   }
 
   const report = await prisma.report.findUnique({
-    where: { id: params.reportId },
+    where: { id: reportId },
   })
 
   if (!report) {

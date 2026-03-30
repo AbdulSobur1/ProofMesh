@@ -368,15 +368,30 @@ export type CompanyPostRecord = {
   author: ConnectionPreviewUser
 }
 
+export type CompanyTeamMember = {
+  id: string
+  role: string
+  joinedAt: string
+  user: ConnectionPreviewUser
+}
+
 export type CompanyAnalytics = {
   followerCount: number
   jobCount: number
   postCount: number
+  memberCount: number
+}
+
+export type CompanyPrivateAnalytics = {
+  totalApplications: number
+  activeCandidates: number
+  hiredCandidates: number
 }
 
 export type CompanyViewerState = {
   isFollowing: boolean
   canManage: boolean
+  membershipRole: string | null
 }
 
 export type ModerationStatus = 'open' | 'reviewed' | 'dismissed' | 'actioned'
@@ -628,6 +643,8 @@ export type CompanyResponse = {
   company: CompanyProfile | null
   jobs: JobPost[]
   posts: CompanyPostRecord[]
+  team: CompanyTeamMember[]
   analytics: CompanyAnalytics
+  privateAnalytics?: CompanyPrivateAnalytics | null
   viewerState: CompanyViewerState
 }

@@ -10,8 +10,9 @@ async function getCurrentUserId(request: Request) {
 
 export async function POST(
   request: Request,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
+  const { postId } = await params
   const currentUserId = await getCurrentUserId(request)
 
   if (!currentUserId) {
@@ -21,7 +22,7 @@ export async function POST(
   const existingLike = await prisma.postLike.findUnique({
     where: {
       postId_userId: {
-        postId: params.postId,
+        postId,
         userId: currentUserId,
       },
     },
@@ -38,7 +39,7 @@ export async function POST(
   }
 
   const post = await prisma.post.findUnique({
-    where: { id: params.postId },
+    where: { id: postId },
     select: {
       id: true,
       userId: true,
@@ -58,7 +59,7 @@ export async function POST(
 
   await prisma.postLike.create({
     data: {
-      postId: params.postId,
+      postId,
       userId: currentUserId,
     },
   })

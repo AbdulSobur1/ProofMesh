@@ -4,11 +4,13 @@ export const sortProofs = (proofs: Proof[], sortMode: ProofSortMode) => {
   const copy = [...proofs]
 
   switch (sortMode) {
-    case 'top':
+    case 'highest':
       return copy.sort((a, b) => b.score - a.score || +new Date(b.createdAt) - +new Date(a.createdAt))
     case 'oldest':
       return copy.sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
-    case 'recent':
+    case 'lowest':
+      return copy.sort((a, b) => a.score - b.score || +new Date(b.createdAt) - +new Date(a.createdAt))
+    case 'newest':
     default:
       return copy.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
   }
@@ -17,7 +19,7 @@ export const sortProofs = (proofs: Proof[], sortMode: ProofSortMode) => {
 export const filterProofs = (
   proofs: Proof[],
   query: string,
-  selectedTag: string,
+  selectedTag: string | null,
   minimumScore: number
 ) => {
   const normalizedQuery = query.trim().toLowerCase()

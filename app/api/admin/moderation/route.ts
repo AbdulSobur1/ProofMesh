@@ -153,6 +153,8 @@ export async function GET(request: Request) {
             verificationStatus: true,
             verificationConfidence: true,
             verificationSignals: true,
+            riskScore: true,
+            riskFlags: true,
             moderationStatus: true,
             verifiedAt: true,
             createdAt: true,
@@ -160,6 +162,7 @@ export async function GET(request: Request) {
         },
         likes: { select: { userId: true } },
         comments: { select: { id: true } },
+        reposts: { select: { id: true } },
       },
     }),
   ])
@@ -184,6 +187,8 @@ export async function GET(request: Request) {
         moderationStatus: post.moderationStatus as 'active' | 'under_review' | 'removed',
         likeCount: post.likes.length,
         commentCount: post.comments.length,
+        repostCount: post.reposts.length,
+        repostedByViewer: false,
         likedByViewer: false,
       },
     ])

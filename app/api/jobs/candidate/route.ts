@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
-import { CandidateJobsResponse } from '@/lib/types'
+import { CandidateJobsResponse, type JobApplicationStatus } from '@/lib/types'
 import { toJobApplicationDto, toJobPostDto } from '@/lib/services/jobs'
 
 export async function GET(request: Request) {
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
       return {
         ...toJobPostDto(job),
         hasApplied: Boolean(application),
-        applicationStatus: application?.status ?? null,
+        applicationStatus: (application?.status as JobApplicationStatus | undefined) ?? null,
         isSaved: job.savedByUsers.length > 0,
       }
     }),

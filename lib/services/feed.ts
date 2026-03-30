@@ -21,9 +21,9 @@ const toProof = (proof: {
   verificationStatus: string
   verificationConfidence: number
   verificationSignals: string
-  riskScore: number
-  riskFlags: string
-  moderationStatus: string
+  riskScore?: number
+  riskFlags?: string
+  moderationStatus?: string
   verifiedAt: Date | null
   createdAt: Date
 }): Proof => ({
@@ -45,8 +45,8 @@ const toProof = (proof: {
   verificationConfidence: proof.verificationConfidence,
   verificationSignals: parseVerificationSignals(proof.verificationSignals),
   riskScore: proof.riskScore,
-  riskFlags: parseTags(proof.riskFlags),
-  moderationStatus: proof.moderationStatus as Proof['moderationStatus'],
+  riskFlags: parseTags(proof.riskFlags ?? null),
+  moderationStatus: (proof.moderationStatus as Proof['moderationStatus']) ?? 'active',
   verifiedAt: proof.verifiedAt?.toISOString() ?? null,
   endorsements: [],
   endorsementCount: 0,
@@ -86,6 +86,9 @@ export const toFeedPost = (post: {
     verificationStatus: string
     verificationConfidence: number
     verificationSignals: string
+    riskScore?: number
+    riskFlags?: string
+    moderationStatus?: string
     verifiedAt: Date | null
     createdAt: Date
   } | null

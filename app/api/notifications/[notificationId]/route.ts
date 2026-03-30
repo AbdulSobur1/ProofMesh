@@ -9,8 +9,9 @@ async function getCurrentUserId(request: Request) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { notificationId: string } }
+  { params }: { params: Promise<{ notificationId: string }> }
 ) {
+  const { notificationId } = await params
   const currentUserId = await getCurrentUserId(request)
 
   if (!currentUserId) {
@@ -19,7 +20,7 @@ export async function PATCH(
 
   const notification = await prisma.notification.findFirst({
     where: {
-      id: params.notificationId,
+      id: notificationId,
       userId: currentUserId,
     },
   })

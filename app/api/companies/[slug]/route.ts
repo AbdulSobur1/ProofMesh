@@ -43,13 +43,14 @@ const toCompanyDto = (company: {
 
 export async function GET(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await params
   const token = await getCurrentToken(request)
   const currentUserId = token?.sub ?? null
 
   const company = await prisma.company.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: {
       jobs: {
         include: {
@@ -112,8 +113,13 @@ export async function GET(
     )
   }
 
-  const [followerCount, canManage] = await Promise.all([
+  const [followerCount, memberCount, membership] = await Promise.all([
     prisma.companyFollow.count({
+      where: {
+        companyId: company.id,
+      },
+    }),
+    prisma.companyMember.count({
       where: {
         companyId: company.id,
       },
@@ -124,7 +130,7 @@ export async function GET(
             companyId: company.id,
             userId: currentUserId,
           },
-          select: { id: true },
+          select: { id: true, role: true },
         })
       : Promise.resolve(null),
   ])
@@ -139,14 +145,17 @@ export async function GET(
       updatedAt: post.updatedAt.toISOString(),
       author: post.author,
     })),
+    team: [],
     analytics: {
       followerCount,
       jobCount: company.jobs.length,
       postCount: company.posts.length,
+      memberCount,
     },
     viewerState: {
       isFollowing: Array.isArray((company as { followers?: unknown[] }).followers) && ((company as { followers?: unknown[] }).followers?.length ?? 0) > 0,
-      canManage: Boolean(canManage),
+      canManage: Boolean(membership),
+      membershipRole: membership?.role ?? null,
     },
   }
 
@@ -155,8 +164,9 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await params
   const token = await getCurrentToken(request)
   const currentUserId = token?.sub
 
@@ -168,7 +178,7 @@ export async function PATCH(
     where: {
       userId: currentUserId,
       company: {
-        slug: params.slug,
+        slug,
       },
     },
     include: {

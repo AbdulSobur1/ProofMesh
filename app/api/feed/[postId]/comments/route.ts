@@ -30,8 +30,9 @@ const commentInclude = {
 
 export async function GET(
   request: Request,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
+  const { postId } = await params
   const currentUserId = await getCurrentUserId(request)
 
   if (!currentUserId) {
@@ -39,7 +40,7 @@ export async function GET(
   }
 
   const comments = await prisma.postComment.findMany({
-    where: { postId: params.postId },
+    where: { postId },
     include: commentInclude,
     orderBy: { createdAt: 'asc' },
   })
@@ -51,8 +52,9 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
+  const { postId } = await params
   const currentUserId = await getCurrentUserId(request)
 
   if (!currentUserId) {
@@ -64,7 +66,7 @@ export async function POST(
     const input = createCommentSchema.parse(body)
 
     const post = await prisma.post.findUnique({
-      where: { id: params.postId },
+      where: { id: postId },
       select: {
         userId: true,
       },
@@ -76,7 +78,7 @@ export async function POST(
 
     const comment = await prisma.postComment.create({
       data: {
-        postId: params.postId,
+        postId,
         userId: currentUserId,
         body: input.body,
       },

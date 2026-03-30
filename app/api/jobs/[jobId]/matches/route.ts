@@ -128,8 +128,9 @@ const toCandidate = (entry: {
 
 export async function GET(
   request: Request,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   const token = await getCurrentToken(request)
   const recruiterId = token?.sub
 
@@ -139,7 +140,7 @@ export async function GET(
 
   const job = await prisma.jobPost.findFirst({
     where: {
-      id: params.jobId,
+      id: jobId,
       recruiterId,
     },
   })

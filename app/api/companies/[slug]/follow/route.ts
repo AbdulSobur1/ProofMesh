@@ -4,8 +4,9 @@ import { getCurrentToken } from '@/lib/auth-options'
 
 export async function POST(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await params
   const token = await getCurrentToken(request)
   const currentUserId = token?.sub
 
@@ -14,7 +15,7 @@ export async function POST(
   }
 
   const company = await prisma.company.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     select: { id: true },
   })
 
@@ -41,8 +42,9 @@ export async function POST(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await params
   const token = await getCurrentToken(request)
   const currentUserId = token?.sub
 
@@ -51,7 +53,7 @@ export async function DELETE(
   }
 
   const company = await prisma.company.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     select: { id: true },
   })
 

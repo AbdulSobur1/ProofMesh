@@ -47,8 +47,9 @@ const applicantInclude = {
 
 export async function GET(
   request: Request,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   const token = await getCurrentToken(request)
   const recruiterId = token?.sub
 
@@ -58,7 +59,7 @@ export async function GET(
 
   const job = await prisma.jobPost.findFirst({
     where: {
-      id: params.jobId,
+      id: jobId,
       recruiterId,
     },
   })
@@ -85,8 +86,9 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   const token = await getCurrentToken(request)
   const applicantId = token?.sub
 
@@ -99,7 +101,7 @@ export async function POST(
     const input = applySchema.parse(body)
 
     const job = await prisma.jobPost.findUnique({
-      where: { id: params.jobId },
+      where: { id: jobId },
     })
 
     if (!job) {

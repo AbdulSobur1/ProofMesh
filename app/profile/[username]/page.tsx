@@ -79,7 +79,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
   const filteredProofs = useMemo(() => {
     const tagFilter = selectedTag === 'all' ? null : selectedTag
-    return sortProofs(filterProofs(proofs, { query, tag: tagFilter, minScore }), sortMode)
+    return sortProofs(filterProofs(proofs, query, tagFilter, minScore), sortMode)
   }, [minScore, proofs, query, selectedTag, sortMode])
 
   const timeline = useMemo(() => getTimeline(proofs), [proofs])
@@ -343,7 +343,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               )}
             </Card>
 
-            <ReputationChart timeline={timeline} />
+            <ReputationChart data={timeline} />
           </div>
 
           {isOwnProfile ? (

@@ -47,8 +47,9 @@ const applicantInclude = {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { jobId: string; applicationId: string } }
+  { params }: { params: Promise<{ jobId: string; applicationId: string }> }
 ) {
+  const { jobId, applicationId } = await params
   const token = await getCurrentToken(request)
   const recruiterId = token?.sub
 
@@ -62,7 +63,7 @@ export async function PATCH(
 
     const job = await prisma.jobPost.findFirst({
       where: {
-        id: params.jobId,
+        id: jobId,
         recruiterId,
       },
     })
@@ -73,7 +74,7 @@ export async function PATCH(
 
     const existingApplication = await prisma.jobApplication.findFirst({
       where: {
-        id: params.applicationId,
+        id: applicationId,
         jobId: job.id,
       },
     })

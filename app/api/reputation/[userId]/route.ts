@@ -72,10 +72,11 @@ const toProof = (proof: {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await params
   const proofs = await prisma.proof.findMany({
-    where: { userId: params.userId },
+    where: { userId },
     orderBy: { createdAt: 'desc' },
     include: {
       endorsements: {

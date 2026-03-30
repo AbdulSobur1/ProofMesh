@@ -43,10 +43,11 @@ const toEndorsement = (endorsement: {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { proofId: string } }
+  { params }: { params: Promise<{ proofId: string }> }
 ) {
+  const { proofId } = await params
   const endorsements = await prisma.proofEndorsement.findMany({
-    where: { proofId: params.proofId },
+    where: { proofId },
     orderBy: { createdAt: 'desc' },
   })
 
@@ -55,8 +56,9 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { proofId: string } }
+  { params }: { params: Promise<{ proofId: string }> }
 ) {
+  const { proofId } = await params
   try {
     const body = await request.json()
     const input = endorsementSchema.parse(body)
@@ -64,7 +66,7 @@ export async function POST(
     const reviewer = token?.sub ? await syncUserTrustLevel(token.sub) : null
 
     const proof = await prisma.proof.findUnique({
-      where: { id: params.proofId },
+      where: { id: proofId },
       include: {
         endorsements: {
           orderBy: { createdAt: 'desc' },
@@ -135,7 +137,7 @@ export async function POST(
       outcomeSummary: proof.outcomeSummary,
       tags: parseTags(proof.tags),
       endorsements: allEndorsements.map((endorsement) => ({
-        relationship: endorsement.relationship,
+        relationship: endorsement.relationship as PeerVerificationRelationship,
         message: endorsement.message,
         verifierCompany: endorsement.verifierCompany,
       })),

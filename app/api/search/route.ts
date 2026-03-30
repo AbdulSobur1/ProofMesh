@@ -6,7 +6,7 @@ import { getPrimaryProfession, getStrongestProof } from '@/lib/services/discover
 import { parseStringArray, toJobPostDto } from '@/lib/services/jobs'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
-import { DiscoveryCandidate, PeerVerification, Proof, SearchResultsResponse, SearchSkillResult } from '@/lib/types'
+import { DiscoveryCandidate, type JobApplicationStatus, PeerVerification, Proof, SearchResultsResponse, SearchSkillResult } from '@/lib/types'
 
 const toEndorsement = (endorsement: {
   id: string
@@ -238,7 +238,7 @@ export async function GET(request: Request) {
       return {
         ...toJobPostDto(job),
         hasApplied: Boolean(application),
-        applicationStatus: application?.status ?? null,
+        applicationStatus: (application?.status as JobApplicationStatus | undefined) ?? null,
       }
     })
     .slice(0, 8)

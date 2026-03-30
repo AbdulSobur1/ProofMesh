@@ -165,6 +165,9 @@ export async function POST(request: Request) {
             messages: {
               orderBy: { createdAt: 'desc' },
               take: 20,
+              include: {
+                proof: true,
+              },
             },
           },
         })
@@ -201,6 +204,9 @@ export async function POST(request: Request) {
             messages: {
               orderBy: { createdAt: 'desc' },
               take: 20,
+              include: {
+                proof: true,
+              },
             },
           },
         })

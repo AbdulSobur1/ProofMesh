@@ -10,8 +10,9 @@ const updateRequestSchema = z.object({
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { requestId: string } }
+  { params }: { params: Promise<{ requestId: string }> }
 ) {
+  const { requestId } = await params
   const token = await getCurrentToken(request)
   const currentUserId = token?.sub
 
@@ -24,7 +25,7 @@ export async function PATCH(
     const input = updateRequestSchema.parse(body)
 
     const endorsementRequest = await prisma.proofEndorsementRequest.findUnique({
-      where: { id: params.requestId },
+      where: { id: requestId },
       include: {
         proof: {
           select: {

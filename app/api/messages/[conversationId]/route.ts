@@ -17,8 +17,9 @@ async function getCurrentUserId(request: Request) {
 
 export async function GET(
   request: Request,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
+  const { conversationId } = await params
   const currentUserId = await getCurrentUserId(request)
 
   if (!currentUserId) {
@@ -27,7 +28,7 @@ export async function GET(
 
   const membership = await prisma.conversationParticipant.findFirst({
     where: {
-      conversationId: params.conversationId,
+      conversationId,
       userId: currentUserId,
     },
   })
@@ -37,7 +38,7 @@ export async function GET(
   }
 
   const conversation = await prisma.conversation.findUnique({
-    where: { id: params.conversationId },
+    where: { id: conversationId },
     include: {
       participants: {
         include: {
@@ -78,8 +79,9 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
+  const { conversationId } = await params
   const currentUserId = await getCurrentUserId(request)
 
   if (!currentUserId) {
@@ -88,7 +90,7 @@ export async function POST(
 
   const membership = await prisma.conversationParticipant.findFirst({
     where: {
-      conversationId: params.conversationId,
+      conversationId,
       userId: currentUserId,
     },
   })
@@ -120,7 +122,7 @@ export async function POST(
 
     const participantIds = await prisma.conversationParticipant.findMany({
       where: {
-        conversationId: params.conversationId,
+        conversationId,
       },
       select: {
         userId: true,
@@ -132,7 +134,7 @@ export async function POST(
         data: {
           body: input.body,
           senderId: currentUserId,
-          conversationId: params.conversationId,
+          conversationId,
           proofId: input.proofId || null,
         },
         include: {
@@ -141,7 +143,7 @@ export async function POST(
       })
 
       await tx.conversation.update({
-        where: { id: params.conversationId },
+        where: { id: conversationId },
         data: {
           lastMessageAt: createdMessage.createdAt,
         },

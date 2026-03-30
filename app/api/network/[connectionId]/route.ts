@@ -42,8 +42,9 @@ async function getCurrentUserId(request: Request) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { connectionId: string } }
+  { params }: { params: Promise<{ connectionId: string }> }
 ) {
+  const { connectionId } = await params
   const currentUserId = await getCurrentUserId(request)
 
   if (!currentUserId) {
@@ -55,7 +56,7 @@ export async function PATCH(
     const input = actionSchema.parse(body)
 
     const connection = await prisma.connection.findUnique({
-      where: { id: params.connectionId },
+      where: { id: connectionId },
     })
 
     if (!connection) {
@@ -122,8 +123,9 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { connectionId: string } }
+  { params }: { params: Promise<{ connectionId: string }> }
 ) {
+  const { connectionId } = await params
   const currentUserId = await getCurrentUserId(request)
 
   if (!currentUserId) {
@@ -131,7 +133,7 @@ export async function DELETE(
   }
 
   const connection = await prisma.connection.findUnique({
-    where: { id: params.connectionId },
+    where: { id: connectionId },
   })
 
   if (!connection) {

@@ -77,6 +77,7 @@ export const evaluateProof = async (input: {
   title: string
   description: string
   link?: string | null
+  sourceCategory?: string
   profession: ProofProfession
   proofType: ProofType
   outcomeSummary?: string | null

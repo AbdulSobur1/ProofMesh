@@ -12,8 +12,9 @@ const createRequestSchema = z.object({
 
 export async function POST(
   request: Request,
-  { params }: { params: { proofId: string } }
+  { params }: { params: Promise<{ proofId: string }> }
 ) {
+  const { proofId } = await params
   const token = await getCurrentToken(request)
   const currentUserId = token?.sub
 
@@ -26,7 +27,7 @@ export async function POST(
     const input = createRequestSchema.parse(body)
 
     const proof = await prisma.proof.findUnique({
-      where: { id: params.proofId },
+      where: { id: proofId },
       include: {
         user: {
           select: {

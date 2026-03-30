@@ -9,8 +9,9 @@ async function getCurrentUserId(request: Request) {
 
 export async function POST(
   request: Request,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   const currentUserId = await getCurrentUserId(request)
 
   if (!currentUserId) {
@@ -18,7 +19,7 @@ export async function POST(
   }
 
   const job = await prisma.jobPost.findUnique({
-    where: { id: params.jobId },
+    where: { id: jobId },
     select: { id: true },
   })
 
@@ -45,8 +46,9 @@ export async function POST(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   const currentUserId = await getCurrentUserId(request)
 
   if (!currentUserId) {
@@ -56,7 +58,7 @@ export async function DELETE(
   await prisma.savedJob.deleteMany({
     where: {
       userId: currentUserId,
-      jobId: params.jobId,
+      jobId,
     },
   })
 

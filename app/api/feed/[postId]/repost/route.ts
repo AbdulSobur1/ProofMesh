@@ -5,8 +5,9 @@ import { createNotification } from '@/lib/services/notifications'
 
 export async function POST(
   request: Request,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
+  const { postId } = await params
   const token = await getCurrentToken(request)
   const currentUserId = token?.sub
 
@@ -15,7 +16,7 @@ export async function POST(
   }
 
   const post = await prisma.post.findUnique({
-    where: { id: params.postId },
+    where: { id: postId },
     select: {
       id: true,
       userId: true,

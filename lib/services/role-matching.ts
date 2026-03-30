@@ -4,8 +4,8 @@ import { DiscoveryCandidate, JobPost, RoleMatch } from '@/lib/types'
 const buildMatches = (
   config: {
     profession: string
-    targetTags: string[]
-    preferredProofTypes: string[]
+    targetTags: readonly string[]
+    preferredProofTypes: readonly string[]
     minScore: number
   },
   candidates: DiscoveryCandidate[]

@@ -5,8 +5,9 @@ import { countSearchResults } from '@/lib/services/search'
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { savedSearchId: string } }
+  { params }: { params: Promise<{ savedSearchId: string }> }
 ) {
+  const { savedSearchId } = await params
   const token = await getCurrentToken(request)
   const currentUserId = token?.sub
 
@@ -16,7 +17,7 @@ export async function PATCH(
 
   const search = await prisma.savedSearch.findFirst({
     where: {
-      id: params.savedSearchId,
+      id: savedSearchId,
       ownerId: currentUserId,
     },
   })
@@ -48,8 +49,9 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { savedSearchId: string } }
+  { params }: { params: Promise<{ savedSearchId: string }> }
 ) {
+  const { savedSearchId } = await params
   const token = await getCurrentToken(request)
   const currentUserId = token?.sub
 
@@ -59,7 +61,7 @@ export async function DELETE(
 
   const search = await prisma.savedSearch.findFirst({
     where: {
-      id: params.savedSearchId,
+      id: savedSearchId,
       ownerId: currentUserId,
     },
   })

@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server'
-import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { calculateReputation } from '@/lib/services/reputation'
 import { getPrimaryProfession, getStrongestProof } from '@/lib/services/discovery'
 import { buildRoleMatches } from '@/lib/services/role-matching'
-import { ROLE_PROFILES, ROLE_SLUGS } from '@/lib/role-taxonomy'
+import { ROLE_PROFILES, type RoleSlug } from '@/lib/role-taxonomy'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
 import { DiscoveryCandidate, PeerVerification, Proof, RoleMatchResponse } from '@/lib/types'
-
-const querySchema = z.object({
-  role: z.enum(ROLE_SLUGS),
-})
 
 const toEndorsement = (endorsement: {
   id: string
@@ -140,11 +135,11 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url)
-  const parsed = querySchema.safeParse({ role: url.searchParams.get('role') })
-
-  if (!parsed.success) {
+  const requestedRole = url.searchParams.get('role')
+  if (!requestedRole || !(requestedRole in ROLE_PROFILES)) {
     return NextResponse.json({ error: 'A valid role is required' }, { status: 400 })
   }
+  const roleSlug = requestedRole as RoleSlug
 
   const saved = await prisma.savedCandidate.findMany({
     where: { recruiterId },
@@ -166,12 +161,12 @@ export async function GET(request: Request) {
   })
 
   const candidates = saved.map(toCandidate).filter((candidate) => candidate.reputation.totalProofs > 0)
-  const matches = buildRoleMatches(parsed.data.role, candidates)
-  const role = ROLE_PROFILES[parsed.data.role]
+  const matches = buildRoleMatches(roleSlug, candidates)
+  const role = ROLE_PROFILES[roleSlug]
 
   const response: RoleMatchResponse = {
     role: {
-      slug: parsed.data.role,
+      slug: roleSlug,
       label: role.label,
       description: role.description,
       profession: role.profession,
