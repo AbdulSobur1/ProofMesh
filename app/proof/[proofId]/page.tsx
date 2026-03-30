@@ -310,8 +310,8 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
       <main className="flex-1 pb-24 md:ml-72 md:pb-0">
         <TopBar />
 
-        <div className="px-4 py-8 md:px-8">
-          <Button asChild variant="outline" size="sm" className="mb-6 border-white/10 bg-white/[0.04]">
+        <div className="px-4 py-6 md:px-8 md:py-8">
+          <Button asChild variant="outline" size="sm" className="mb-6 w-full justify-start border-white/10 bg-white/[0.04] sm:w-auto">
             <Link href="/dashboard">
               <ArrowLeft className="size-4" />
               Back to dashboard
@@ -336,8 +336,8 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
           ) : (
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(340px,0.95fr)]">
               <div className="space-y-6">
-                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 shadow-[0_18px_60px_rgba(2,6,23,0.24)] backdrop-blur">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
+                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.24)] backdrop-blur sm:p-8">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                       <Sparkles className="size-4 text-primary" />
                       Verified Proof
@@ -376,7 +376,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                     </Badge>
                   </div>
 
-                  <h1 className="mt-5 text-3xl font-semibold tracking-tight text-foreground">{proof.title}</h1>
+                  <h1 className="mt-5 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{proof.title}</h1>
                   <p className="mt-4 text-sm leading-7 text-muted-foreground">{proof.description}</p>
 
                   {proof.outcomeSummary ? (
@@ -399,7 +399,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
 
                   {proof.verificationSignals.length > 0 ? (
                     <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.04] p-5">
-                      <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="mb-3 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                           <CheckCircle2 className="size-4 text-primary" />
                           Trust Signals
@@ -439,7 +439,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                             href={item.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                            className="flex flex-col items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-foreground transition-colors hover:border-primary/30 hover:text-primary sm:flex-row sm:items-center sm:justify-between"
                           >
                             <div>
                               <p className="font-medium">{item.label}</p>
@@ -462,7 +462,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                     </div>
                   )}
 
-                  <div className="mt-6 grid gap-4 md:grid-cols-4">
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Date</p>
                       <p className="mt-2 text-sm font-medium text-foreground">{formatDate(proof.createdAt)}</p>
@@ -491,16 +491,16 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                     </div>
                   </div>
 
-                  <div className="mt-8 flex flex-wrap items-center gap-3">
+                  <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                     {proof.link && (
-                      <Button asChild>
+                      <Button asChild className="w-full sm:w-auto">
                         <a href={proof.link} target="_blank" rel="noreferrer">
                           <ExternalLink className="size-4" />
                           View Source
                         </a>
                       </Button>
                     )}
-                    <Button asChild variant="outline" className="border-white/10 bg-white/[0.04]">
+                    <Button asChild variant="outline" className="w-full border-white/10 bg-white/[0.04] sm:w-auto">
                       <Link href={`/profile/${data.user.username}`}>
                         <User className="size-4" />
                         View Profile
@@ -509,8 +509,8 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                   </div>
                 </Card>
 
-                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
-                  <div className="flex items-center justify-between gap-3">
+                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur sm:p-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Peer Verification</p>
                       <h2 className="mt-1 text-lg font-semibold text-foreground">External trust notes</h2>
@@ -528,7 +528,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                     <div className="mt-5 space-y-3">
                       {proof.endorsements.map((endorsement) => (
                         <div key={endorsement.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
                                 <p className="text-sm font-semibold text-foreground">{endorsement.verifierName}</p>
@@ -561,7 +561,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                   )}
                 </Card>
 
-                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
+                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur sm:p-6">
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                     <Flag className="size-4 text-primary" />
                     Report Proof
@@ -596,7 +596,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
               </div>
 
               <div className="space-y-6">
-                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
+                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur sm:p-6">
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                     <ShieldCheck className="size-4 text-primary" />
                     Audit Trail
@@ -654,7 +654,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                 </Card>
 
                 {isOwnProof ? (
-                  <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
+                  <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur sm:p-6">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                       <Send className="size-4 text-primary" />
                       Request Verification
@@ -724,8 +724,8 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                 ) : null}
 
                 {isOwnProof && ownerRequests.length > 0 ? (
-                  <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
-                    <div className="flex items-center justify-between">
+                  <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur sm:p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Request Status</p>
                         <h2 className="mt-1 text-lg font-semibold text-foreground">Verification requests</h2>
@@ -751,7 +751,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                     <div className="mt-5 space-y-3">
                       {ownerRequests.map((request) => (
                         <div key={request.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
                                 <p className="text-sm font-semibold text-foreground">
@@ -782,7 +782,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                                 </p>
                               ) : null}
                             </div>
-                            <div className="text-right">
+                            <div className="text-left sm:text-right">
                               <span className="text-xs text-muted-foreground">{formatDate(request.createdAt)}</span>
                               {request.status === 'pending' ? (
                                 <div className="mt-3">
@@ -790,7 +790,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="border-white/10 bg-white/[0.04]"
+                                    className="w-full border-white/10 bg-white/[0.04] sm:w-auto"
                                     onClick={() => handleCancelRequest(request.id)}
                                     disabled={cancellingRequestId === request.id}
                                   >
@@ -808,7 +808,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                 ) : null}
 
                 {viewerRequest?.status === 'pending' ? (
-                  <Card className="rounded-[28px] border border-sky-500/20 bg-sky-500/10 p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
+                  <Card className="rounded-[28px] border border-sky-500/20 bg-sky-500/10 p-5 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur sm:p-6">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-200">
                       <MessageSquareQuote className="size-4" />
                       Pending Request
@@ -822,8 +822,9 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                         {viewerRequest.message}
                       </p>
                     ) : null}
-                    <div className="mt-4 flex gap-3">
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                       <Button
+                        className="w-full sm:w-auto"
                         type="button"
                         onClick={() => document.getElementById('verification-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                       >
@@ -834,7 +835,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                         variant="outline"
                         onClick={() => handleDeclineRequest(viewerRequest.id)}
                         disabled={decliningRequestId === viewerRequest.id}
-                        className="border-white/10 bg-white/[0.04]"
+                        className="w-full border-white/10 bg-white/[0.04] sm:w-auto"
                       >
                         <X className="size-4" />
                         {decliningRequestId === viewerRequest.id ? 'Declining...' : 'Decline'}
@@ -843,7 +844,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                   </Card>
                 ) : null}
 
-                <Card id="verification-form-card" className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
+                <Card id="verification-form-card" className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur sm:p-6">
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                     <MessageSquareQuote className="size-4 text-primary" />
                     Add Verification Note
@@ -955,8 +956,8 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                   </form>
                 </Card>
 
-                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
-                  <div className="flex items-center justify-between">
+                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur sm:p-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Reputation Signal</p>
                       <h2 className="mt-1 text-lg font-semibold text-foreground">Owner Summary</h2>

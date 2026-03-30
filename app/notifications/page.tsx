@@ -179,27 +179,27 @@ export default function NotificationsPage() {
       <main className="flex-1 pb-24 md:ml-72 md:pb-0">
         <TopBar />
 
-        <div className="mx-auto max-w-6xl px-4 py-8 md:px-8">
-          <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-6 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
+        <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">
+          <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-5 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,140,255,0.08),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(54,214,255,0.05),transparent_28%)]" />
-            <div className="relative flex items-start justify-between gap-4">
+            <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-start gap-4">
-                <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:size-14">
                   <Bell className="size-6" />
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Notifications</p>
-                  <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Stay on top of the signals that matter.</h1>
+                  <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Stay on top of the signals that matter.</h1>
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                     Likes, comments, messages, connections, and hiring activity now come back to one place so ProofMesh feels alive instead of passive.
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                   {isLoading ? 'Loading…' : `${unreadCount} unread`}
                 </Badge>
-                <Button variant="outline" onClick={markAllRead} disabled={isMarkingAll || visibleUnreadIds.length === 0}>
+                <Button variant="outline" onClick={markAllRead} disabled={isMarkingAll || visibleUnreadIds.length === 0} className="w-full sm:w-auto">
                   <CheckCheck className="size-4" />
                   Mark visible read
                 </Button>
@@ -215,9 +215,11 @@ export default function NotificationsPage() {
 
           <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div>
-              <Card className="mb-6 rounded-[2rem] border border-border/60 p-5">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex flex-wrap gap-2">
+              <Card className="mb-6 rounded-[2rem] border border-border/60 p-4 sm:p-5">
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Status</p>
+                    <div className="flex flex-wrap gap-2">
                     {(['all', 'unread', 'read'] as const).map((status) => (
                       <Button
                         key={status}
@@ -228,8 +230,11 @@ export default function NotificationsPage() {
                         {status === 'all' ? 'All' : status === 'unread' ? 'Unread' : 'Read'}
                       </Button>
                     ))}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Type</p>
+                    <div className="flex flex-wrap gap-2">
                     {notificationTypeOptions.map((option) => (
                       <Button
                         key={option.value}
@@ -240,6 +245,7 @@ export default function NotificationsPage() {
                         {option.label}
                       </Button>
                     ))}
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -267,7 +273,7 @@ export default function NotificationsPage() {
                           isUnread ? 'border-primary/25 bg-primary/5' : 'border-border/60'
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex min-w-0 gap-4">
                             <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-background/80 text-primary">
                               <Icon className="size-5" />
@@ -288,9 +294,9 @@ export default function NotificationsPage() {
                               <p className="mt-2 text-xs text-muted-foreground">{formatDate(notification.createdAt)}</p>
                             </div>
                           </div>
-                          <div className="flex shrink-0 items-center gap-2">
+                          <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
                             {notification.link ? (
-                              <Button asChild variant="outline" size="sm">
+                              <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
                                 <Link
                                   href={notification.link}
                                   onClick={() => {
@@ -309,6 +315,7 @@ export default function NotificationsPage() {
                                 size="sm"
                                 onClick={() => markOneRead(notification.id)}
                                 disabled={markingId === notification.id}
+                                className="w-full sm:w-auto"
                               >
                                 Mark read
                               </Button>
@@ -323,7 +330,7 @@ export default function NotificationsPage() {
             </div>
 
             <div className="space-y-6">
-              <Card className="rounded-[2rem] border border-border/60 p-6">
+              <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Settings2 className="size-4 text-primary" />
                   Notification settings
@@ -355,7 +362,7 @@ export default function NotificationsPage() {
                 </p>
               </Card>
 
-              <Card className="rounded-[2rem] border border-border/60 p-6">
+              <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Bell className="size-4 text-primary" />
                   Inbox state
