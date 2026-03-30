@@ -194,8 +194,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-6 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,140,255,0.08),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(54,214,255,0.05),transparent_28%)]" />
             <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="flex size-20 items-center justify-center rounded-[1.5rem] border border-border/60 bg-background/70 text-primary shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="flex size-16 items-center justify-center rounded-[1.25rem] border border-border/60 bg-background/70 text-primary shadow-sm sm:size-20 sm:rounded-[1.5rem]">
                   <User className="size-10" />
                 </div>
                 <div>
@@ -214,7 +214,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                       </Badge>
                     ) : null}
                   </div>
-                  <h1 className="mt-4 text-4xl font-semibold tracking-tight capitalize text-foreground sm:text-5xl">
+                  <h1 className="mt-4 text-3xl font-semibold tracking-tight capitalize text-foreground sm:text-5xl">
                     {profileName}
                   </h1>
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
@@ -251,9 +251,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 {isOwnProfile ? (
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="w-full sm:w-auto">
                     <Link href="/profile/edit" className="gap-2">
                       <PencilLine className="size-4" />
                       Edit profile
@@ -261,44 +261,44 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   </Button>
                 ) : null}
                 {!isOwnProfile && data?.viewerConnection.status === 'none' ? (
-                  <Button onClick={() => runNetworkAction({ method: 'POST', url: '/api/network', body: { targetUsername: username } })} disabled={isNetworkActionLoading}>
+                  <Button onClick={() => runNetworkAction({ method: 'POST', url: '/api/network', body: { targetUsername: username } })} disabled={isNetworkActionLoading} className="w-full sm:w-auto">
                     <UserPlus className="size-4" />
                     Connect
                   </Button>
                 ) : null}
                 {!isOwnProfile && data?.viewerConnection.status === 'pending_incoming' && data.viewerConnection.connectionId ? (
                   <>
-                    <Button onClick={() => runNetworkAction({ method: 'PATCH', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}`, body: { action: 'accept' } })} disabled={isNetworkActionLoading}>
+                    <Button onClick={() => runNetworkAction({ method: 'PATCH', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}`, body: { action: 'accept' } })} disabled={isNetworkActionLoading} className="w-full sm:w-auto">
                       <Check className="size-4" />
                       Accept request
                     </Button>
-                    <Button variant="outline" onClick={() => runNetworkAction({ method: 'PATCH', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}`, body: { action: 'decline' } })} disabled={isNetworkActionLoading}>
+                    <Button variant="outline" onClick={() => runNetworkAction({ method: 'PATCH', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}`, body: { action: 'decline' } })} disabled={isNetworkActionLoading} className="w-full sm:w-auto">
                       <X className="size-4" />
                       Decline
                     </Button>
                   </>
                 ) : null}
                 {!isOwnProfile && data?.viewerConnection.status === 'pending_outgoing' && data.viewerConnection.connectionId ? (
-                  <Button variant="outline" onClick={() => runNetworkAction({ method: 'PATCH', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}`, body: { action: 'cancel' } })} disabled={isNetworkActionLoading}>
+                  <Button variant="outline" onClick={() => runNetworkAction({ method: 'PATCH', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}`, body: { action: 'cancel' } })} disabled={isNetworkActionLoading} className="w-full sm:w-auto">
                     <Clock3 className="size-4" />
                     Request sent
                   </Button>
                 ) : null}
                 {!isOwnProfile && data?.viewerConnection.status === 'connected' && data.viewerConnection.connectionId ? (
                   <>
-                    <Button asChild>
+                    <Button asChild className="w-full sm:w-auto">
                       <Link href={`/messages?user=${encodeURIComponent(username)}`}>
                         <Mail className="size-4" />
                         Message
                       </Link>
                     </Button>
-                    <Button variant="outline" onClick={() => runNetworkAction({ method: 'DELETE', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}` })} disabled={isNetworkActionLoading}>
+                    <Button variant="outline" onClick={() => runNetworkAction({ method: 'DELETE', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}` })} disabled={isNetworkActionLoading} className="w-full sm:w-auto">
                       <Check className="size-4" />
                       Connected
                     </Button>
                   </>
                 ) : null}
-                <Button asChild>
+                <Button asChild className="w-full sm:w-auto">
                   <Link href="/submit" className="gap-2">
                     Submit proof
                     <ArrowRight className="size-4" />
@@ -324,8 +324,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <Card className="rounded-[2rem] border-border/60 p-6">
-              <div className="flex items-start gap-4">
-                <div className="flex size-20 shrink-0 items-center justify-center rounded-[1.5rem] border border-border/60 bg-background/70 text-2xl font-semibold text-primary shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="flex size-16 shrink-0 items-center justify-center rounded-[1.25rem] border border-border/60 bg-background/70 text-xl font-semibold text-primary shadow-sm sm:size-20 sm:rounded-[1.5rem] sm:text-2xl">
                   {profileInitial}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -524,8 +524,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               ) : (
                 <div className="mt-5 space-y-4">
                   {workExperiences.map((entry) => (
-                    <div key={entry.id} className="rounded-2xl border border-border/60 bg-background/40 p-4">
-                      <div className="flex items-start gap-3">
+                      <div key={entry.id} className="rounded-2xl border border-border/60 bg-background/40 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                         <div className="mt-1 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                           <BriefcaseBusiness className="size-4" />
                         </div>
@@ -629,7 +629,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 <div className="mt-5 space-y-4">
                   {educations.map((entry) => (
                     <div key={entry.id} className="rounded-2xl border border-border/60 bg-background/40 p-4">
-                      <div className="flex items-start gap-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                         <div className="mt-1 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                           <GraduationCap className="size-4" />
                         </div>
@@ -670,7 +670,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 <div className="mt-5 space-y-4">
                   {certifications.map((entry) => (
                     <div key={entry.id} className="rounded-2xl border border-border/60 bg-background/40 p-4">
-                      <div className="flex items-start gap-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                         <div className="mt-1 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                           <Award className="size-4" />
                         </div>
