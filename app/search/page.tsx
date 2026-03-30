@@ -149,20 +149,20 @@ export default function SearchPage() {
       <main className="flex-1 pb-24 md:ml-72 md:pb-0">
         <TopBar />
 
-        <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-          <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-6 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
+        <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
+          <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-5 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,140,255,0.08),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(54,214,255,0.05),transparent_28%)]" />
             <div className="relative flex items-start gap-4">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:size-14">
                 <Search className="size-6" />
               </div>
               <div className="w-full">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Global search</p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Search people, companies, jobs, proofs, and skill evidence.</h1>
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Search people, companies, jobs, proofs, and skill evidence.</h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                   This is the cross-platform lookup layer: instead of hopping page to page, you can now search the whole proof-backed network from one place.
                 </p>
-                <div className="mt-5 flex items-center gap-3">
+                <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center">
                   <Input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
@@ -174,15 +174,16 @@ export default function SearchPage() {
                     variant={isSaved ? 'outline' : 'default'}
                     onClick={saveSearch}
                     disabled={!submittedQuery.trim() || isSavingSearch || isSaved}
+                    className="w-full lg:w-auto"
                   >
                     <BookmarkPlus className="size-4" />
                     {isSaved ? 'Saved' : isSavingSearch ? 'Saving...' : 'Save search'}
                   </Button>
-                  <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                  <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground lg:self-center">
                     {isLoading ? 'Searching…' : `${resultCount} results`}
                   </Badge>
                 </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-[180px_180px_180px_160px_1fr]">
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_180px_180px_160px_1fr]">
                   <select
                     value={resultType}
                     onChange={(event) => setResultType(event.target.value)}
@@ -268,8 +269,8 @@ export default function SearchPage() {
           ) : (
             <div className="mt-6 space-y-8">
               {savedSearches.length > 0 ? (
-                <Card className="rounded-[2rem] border border-border/60 p-6">
-                  <div className="flex items-center justify-between gap-3">
+                <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="text-lg font-semibold text-foreground">Saved searches</h2>
                       <p className="mt-1 text-sm text-muted-foreground">Pinned queries you want to revisit and track.</p>
@@ -322,8 +323,8 @@ export default function SearchPage() {
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     {companies.map((company) => (
-                      <Card key={company.id} className="rounded-[2rem] border border-border/60 p-6">
-                        <div className="flex items-start justify-between gap-3">
+                      <Card key={company.id} className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <h3 className="text-xl font-semibold text-foreground">{company.name}</h3>
                             {company.tagline ? (
@@ -342,7 +343,7 @@ export default function SearchPage() {
                               ) : null}
                             </div>
                           </div>
-                          <Button asChild variant="outline">
+                          <Button asChild variant="outline" className="w-full sm:w-auto">
                             <Link href={`/company/${encodeURIComponent(company.slug)}`}>Open</Link>
                           </Button>
                         </div>
@@ -363,8 +364,8 @@ export default function SearchPage() {
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     {jobs.map((job: CandidateJobPost) => (
-                      <Card key={job.id} className="rounded-[2rem] border border-border/60 p-6">
-                        <div className="flex items-start justify-between gap-3">
+                      <Card key={job.id} className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <h3 className="text-xl font-semibold text-foreground">{job.title}</h3>
                             <p className="mt-2 text-sm text-muted-foreground">
@@ -379,7 +380,7 @@ export default function SearchPage() {
                               ))}
                             </div>
                           </div>
-                          <Button asChild variant="outline">
+                          <Button asChild variant="outline" className="w-full sm:w-auto">
                             <Link href="/jobs">View</Link>
                           </Button>
                         </div>
@@ -400,8 +401,8 @@ export default function SearchPage() {
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     {proofs.map((proof: SearchProofResult) => (
-                      <Card key={proof.id} className="rounded-[2rem] border border-border/60 p-6">
-                        <div className="flex items-start justify-between gap-3">
+                      <Card key={proof.id} className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <h3 className="text-xl font-semibold text-foreground">{proof.title}</h3>
                             <p className="mt-2 text-sm text-muted-foreground">
@@ -427,7 +428,7 @@ export default function SearchPage() {
                               ))}
                             </div>
                           </div>
-                          <Button asChild variant="outline">
+                          <Button asChild variant="outline" className="w-full sm:w-auto">
                             <Link href={`/proof/${encodeURIComponent(proof.id)}`}>Open</Link>
                           </Button>
                         </div>
@@ -448,7 +449,7 @@ export default function SearchPage() {
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     {skills.map((skill: SearchSkillResult) => (
-                      <Card key={skill.name} className="rounded-[2rem] border border-border/60 p-6">
+                      <Card key={skill.name} className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
                         <h3 className="text-xl font-semibold text-foreground">{skill.name}</h3>
                         <p className="mt-2 text-sm text-muted-foreground">
                           {skill.candidateCount} candidate{skill.candidateCount === 1 ? '' : 's'} • {skill.proofCount} proof{skill.proofCount === 1 ? '' : 's'}

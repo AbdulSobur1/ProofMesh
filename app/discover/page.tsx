@@ -115,8 +115,8 @@ export default function DiscoverPage() {
       <main className="flex-1 pb-24 md:ml-72 md:pb-0">
         <TopBar />
 
-        <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-          <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-6 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
+        <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
+          <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-5 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,140,255,0.08),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(54,214,255,0.05),transparent_28%)]" />
             <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
@@ -132,14 +132,14 @@ export default function DiscoverPage() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                <Button asChild variant="outline">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Button asChild variant="outline" className="w-full sm:w-auto">
                   <Link href="/discover/saved" className="gap-2">
                     <BookmarkCheck className="size-4" />
                     Open shortlist
                   </Link>
                 </Button>
-                <Button asChild>
+                <Button asChild className="w-full sm:w-auto">
                   <Link href="/submit" className="gap-2">
                     Submit proof
                     <ArrowRight className="size-4" />
@@ -149,23 +149,23 @@ export default function DiscoverPage() {
             </div>
           </section>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-4">
-            <Card className="rounded-[2rem] border border-border/60 p-6">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Candidates</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-foreground">{isLoading ? '—' : totals.candidates}</p>
               <p className="mt-2 text-sm text-muted-foreground">Profiles with proof already on record.</p>
             </Card>
-            <Card className="rounded-[2rem] border border-border/60 p-6">
+            <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Proof inventory</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-foreground">{isLoading ? '—' : totals.proofs}</p>
               <p className="mt-2 text-sm text-muted-foreground">Artifacts and case studies available to review.</p>
             </Card>
-            <Card className="rounded-[2rem] border border-border/60 p-6">
+            <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">External notes</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-foreground">{isLoading ? '—' : totals.endorsements}</p>
               <p className="mt-2 text-sm text-muted-foreground">Peer, client, and manager verifications attached.</p>
             </Card>
-            <Card className="rounded-[2rem] border border-border/60 p-6">
+            <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Shortlisted</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-foreground">{isLoading ? '—' : totals.saved}</p>
               <p className="mt-2 text-sm text-muted-foreground">Candidates you’ve saved for follow-up.</p>
@@ -194,7 +194,7 @@ export default function DiscoverPage() {
           </div>
 
           <section className="mt-8">
-            <div className="mb-5 flex items-center gap-3">
+            <div className="mb-5 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">Candidate results</h2>
               <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                 {isLoading ? 'Loading…' : `${candidates.length} shown`}

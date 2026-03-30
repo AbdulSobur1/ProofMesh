@@ -77,7 +77,7 @@ export default function NetworkPage() {
       <Card key={connection.id} className="rounded-[2rem] border border-border/60 p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-semibold text-foreground">
                 {displayUser.displayName || displayUser.username}
               </h3>
@@ -90,18 +90,18 @@ export default function NetworkPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link href={`/profile/${encodeURIComponent(displayUser.username)}`}>View profile</Link>
             </Button>
 
             {mode === 'incoming' ? (
               <>
-                <Button onClick={() => actOnConnection(connection.id, 'PATCH', 'accept')} disabled={actingConnectionId === connection.id}>
+                <Button onClick={() => actOnConnection(connection.id, 'PATCH', 'accept')} disabled={actingConnectionId === connection.id} className="w-full sm:w-auto">
                   <Check className="size-4" />
                   Accept
                 </Button>
-                <Button variant="outline" onClick={() => actOnConnection(connection.id, 'PATCH', 'decline')} disabled={actingConnectionId === connection.id}>
+                <Button variant="outline" onClick={() => actOnConnection(connection.id, 'PATCH', 'decline')} disabled={actingConnectionId === connection.id} className="w-full sm:w-auto">
                   <X className="size-4" />
                   Decline
                 </Button>
@@ -109,7 +109,7 @@ export default function NetworkPage() {
             ) : null}
 
             {mode === 'outgoing' ? (
-              <Button variant="outline" onClick={() => actOnConnection(connection.id, 'PATCH', 'cancel')} disabled={actingConnectionId === connection.id}>
+              <Button variant="outline" onClick={() => actOnConnection(connection.id, 'PATCH', 'cancel')} disabled={actingConnectionId === connection.id} className="w-full sm:w-auto">
                 <X className="size-4" />
                 Cancel request
               </Button>
@@ -117,13 +117,13 @@ export default function NetworkPage() {
 
             {mode === 'connected' ? (
               <>
-                <Button asChild>
+                <Button asChild className="w-full sm:w-auto">
                   <Link href={`/messages?user=${encodeURIComponent(displayUser.username)}`}>
                     <Mail className="size-4" />
                     Message
                   </Link>
                 </Button>
-                <Button variant="outline" onClick={() => actOnConnection(connection.id, 'DELETE')} disabled={actingConnectionId === connection.id}>
+                <Button variant="outline" onClick={() => actOnConnection(connection.id, 'DELETE')} disabled={actingConnectionId === connection.id} className="w-full sm:w-auto">
                   <X className="size-4" />
                   Remove connection
                 </Button>
@@ -145,16 +145,16 @@ export default function NetworkPage() {
       <main className="flex-1 pb-24 md:ml-72 md:pb-0">
         <TopBar />
 
-        <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-          <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-6 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
+        <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
+          <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-5 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,140,255,0.08),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(54,214,255,0.05),transparent_28%)]" />
             <div className="relative flex items-start gap-4">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:size-14">
                 <Users className="size-6" />
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Professional network</p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Build real connections around proof-backed profiles.</h1>
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Build real connections around proof-backed profiles.</h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                   This is the first social layer in ProofMesh: send requests, accept them, and start building a graph of credible professional relationships.
                 </p>
@@ -168,16 +168,16 @@ export default function NetworkPage() {
             </Card>
           ) : null}
 
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <Card className="rounded-[2rem] border border-border/60 p-6">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Connections</p>
               <p className="mt-3 text-4xl font-semibold text-foreground">{isLoading ? '—' : data?.counts.totalConnections ?? 0}</p>
             </Card>
-            <Card className="rounded-[2rem] border border-border/60 p-6">
+            <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Incoming requests</p>
               <p className="mt-3 text-4xl font-semibold text-foreground">{isLoading ? '—' : data?.counts.incomingRequests ?? 0}</p>
             </Card>
-            <Card className="rounded-[2rem] border border-border/60 p-6">
+            <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Sent requests</p>
               <p className="mt-3 text-4xl font-semibold text-foreground">{isLoading ? '—' : data?.counts.outgoingRequests ?? 0}</p>
             </Card>
@@ -185,7 +185,7 @@ export default function NetworkPage() {
 
           <div className="mt-8 space-y-8">
             <section>
-              <div className="mb-4 flex items-center gap-3">
+              <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <h2 className="text-2xl font-semibold tracking-tight text-foreground">Incoming requests</h2>
                 <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                   {isLoading ? 'Loading…' : incomingRequests.length}
@@ -205,7 +205,7 @@ export default function NetworkPage() {
             </section>
 
             <section>
-              <div className="mb-4 flex items-center gap-3">
+              <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <h2 className="text-2xl font-semibold tracking-tight text-foreground">Sent requests</h2>
                 <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                   {isLoading ? 'Loading…' : outgoingRequests.length}
@@ -225,7 +225,7 @@ export default function NetworkPage() {
             </section>
 
             <section>
-              <div className="mb-4 flex items-center gap-3">
+              <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <h2 className="text-2xl font-semibold tracking-tight text-foreground">Connections</h2>
                 <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                   {isLoading ? 'Loading…' : connections.length}

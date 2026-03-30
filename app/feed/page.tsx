@@ -215,16 +215,16 @@ export default function FeedPage() {
       <main className="flex-1 pb-24 md:ml-72 md:pb-0">
         <TopBar />
 
-        <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-          <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-6 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
+        <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
+          <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/70 p-5 shadow-[0_24px_80px_rgba(2,8,23,0.08)] backdrop-blur md:p-8">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,140,255,0.08),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(54,214,255,0.05),transparent_28%)]" />
             <div className="relative flex items-start gap-4">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:size-14">
                 <Newspaper className="size-6" />
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Activity feed</p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">See what your proof-backed network is building.</h1>
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">See what your proof-backed network is building.</h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                   Publish professional updates, share proofs, and keep your network moving around actual work instead of empty self-promotion.
                 </p>
@@ -240,19 +240,19 @@ export default function FeedPage() {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div className="space-y-6">
-              <Card className="rounded-[2rem] border border-border/60 p-6">
-                <div className="flex items-center justify-between gap-3">
+              <Card className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold text-foreground">Share an update</h2>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {currentUser ? `Posting as ${currentUser.displayName || currentUser.username}` : 'Post to your feed'}
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button type="button" variant={postType === 'text' ? 'default' : 'outline'} size="sm" onClick={() => setPostType('text')}>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button type="button" variant={postType === 'text' ? 'default' : 'outline'} size="sm" onClick={() => setPostType('text')} className="w-full sm:w-auto">
                       Text update
                     </Button>
-                    <Button type="button" variant={postType === 'proof_share' ? 'default' : 'outline'} size="sm" onClick={() => setPostType('proof_share')}>
+                    <Button type="button" variant={postType === 'proof_share' ? 'default' : 'outline'} size="sm" onClick={() => setPostType('proof_share')} className="w-full sm:w-auto">
                       Proof share
                     </Button>
                   </div>
@@ -295,7 +295,7 @@ export default function FeedPage() {
                   ) : null}
 
                   <div className="flex justify-end">
-                    <Button onClick={publish} disabled={isPosting || !body.trim() || (postType === 'proof_share' && !selectedProofId)}>
+                    <Button onClick={publish} disabled={isPosting || !body.trim() || (postType === 'proof_share' && !selectedProofId)} className="w-full sm:w-auto">
                       <Send className="size-4" />
                       {isPosting ? 'Publishing...' : 'Publish'}
                     </Button>
@@ -304,7 +304,7 @@ export default function FeedPage() {
               </Card>
 
               <section>
-                <div className="mb-4 flex items-center gap-3">
+                <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                   <h2 className="text-2xl font-semibold tracking-tight text-foreground">Latest activity</h2>
                   <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                     {isLoading ? 'Loading…' : `${posts.length} posts`}
@@ -324,8 +324,8 @@ export default function FeedPage() {
                 ) : (
                   <div className="space-y-4">
                     {posts.map((post) => (
-                      <Card key={post.id} className="rounded-[2rem] border border-border/60 p-6">
-                        <div className="flex items-start justify-between gap-4">
+                      <Card key={post.id} className="rounded-[2rem] border border-border/60 p-5 sm:p-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-base font-semibold text-foreground">
@@ -365,7 +365,7 @@ export default function FeedPage() {
                             size="sm"
                             onClick={() => toggleLike(post.id)}
                             disabled={engagingPostId === post.id}
-                            className={post.likedByViewer ? 'border-rose-500/30 bg-rose-500/10 text-rose-400' : ''}
+                            className={`w-full sm:w-auto ${post.likedByViewer ? 'border-rose-500/30 bg-rose-500/10 text-rose-400' : ''}`}
                           >
                             <Heart className="size-4" />
                             {post.likeCount} like{post.likeCount === 1 ? '' : 's'}
@@ -376,6 +376,7 @@ export default function FeedPage() {
                             size="sm"
                             onClick={() => loadComments(post.id)}
                             disabled={engagingPostId === post.id}
+                            className="w-full sm:w-auto"
                           >
                             <MessageCircle className="size-4" />
                             {post.commentCount} comment{post.commentCount === 1 ? '' : 's'}
@@ -386,7 +387,7 @@ export default function FeedPage() {
                             size="sm"
                             onClick={() => toggleRepost(post.id)}
                             disabled={engagingPostId === post.id}
-                            className={post.repostedByViewer ? 'border-sky-500/30 bg-sky-500/10 text-sky-400' : ''}
+                            className={`w-full sm:w-auto ${post.repostedByViewer ? 'border-sky-500/30 bg-sky-500/10 text-sky-400' : ''}`}
                           >
                             <Repeat2 className="size-4" />
                             {post.repostCount} repost{post.repostCount === 1 ? '' : 's'}
@@ -397,6 +398,7 @@ export default function FeedPage() {
                             size="sm"
                             onClick={() => reportPost(post.id)}
                             disabled={reportingPostId === post.id}
+                            className="w-full sm:w-auto"
                           >
                             <Flag className="size-4" />
                             Report
@@ -411,7 +413,7 @@ export default function FeedPage() {
                               ) : (
                                 (commentsByPostId[post.id] ?? []).map((comment) => (
                                   <div key={comment.id} className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                                    <div className="flex items-center justify-between gap-3">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                       <div>
                                         <p className="text-sm font-semibold text-foreground">
                                           {comment.author.displayName || comment.author.username}
@@ -426,7 +428,7 @@ export default function FeedPage() {
                               )}
                             </div>
 
-                            <div className="flex gap-3">
+                            <div className="flex flex-col gap-3 sm:flex-row">
                               <Textarea
                                 value={commentDraftByPostId[post.id] ?? ''}
                                 onChange={(event) =>
@@ -438,7 +440,7 @@ export default function FeedPage() {
                                 rows={2}
                                 placeholder="Add a comment..."
                               />
-                              <Button onClick={() => addComment(post.id)} disabled={engagingPostId === post.id || !(commentDraftByPostId[post.id] ?? '').trim()}>
+                              <Button onClick={() => addComment(post.id)} disabled={engagingPostId === post.id || !(commentDraftByPostId[post.id] ?? '').trim()} className="w-full sm:w-auto">
                                 <Send className="size-4" />
                                 Comment
                               </Button>
@@ -452,7 +454,7 @@ export default function FeedPage() {
               </section>
             </div>
 
-            <Card className="h-fit rounded-[2rem] border border-border/60 p-6">
+            <Card className="h-fit rounded-[2rem] border border-border/60 p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Why this matters</p>
               <div className="mt-4 space-y-4 text-sm leading-6 text-muted-foreground">
                 <p>LinkedIn has activity. ProofMesh now has activity anchored to actual work and verified proof.</p>
