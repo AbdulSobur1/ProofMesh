@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
+import { syncUserTrustLevel } from '@/lib/services/trust-server'
 
 const createReportSchema = z.object({
   targetType: z.enum(['proof', 'post']),
@@ -17,6 +18,8 @@ export async function POST(request: Request) {
   if (!currentUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const reporter = await syncUserTrustLevel(currentUserId)
 
   try {
     const body = await request.json()
@@ -42,6 +45,7 @@ export async function POST(request: Request) {
         targetId: input.targetId,
         reason: input.reason,
         details: input.details || null,
+        reporterTrustLevel: reporter?.trustLevel ?? 'standard',
         reporterId: currentUserId,
       },
     })

@@ -5,6 +5,7 @@ import { isAdminUsername } from '@/lib/services/admin'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
 import { ModerationQueueResponse, PeerVerification, Proof } from '@/lib/types'
+import { getTrustWeight } from '@/lib/services/trust'
 
 const reporterSelect = {
   id: true,
@@ -23,6 +24,8 @@ const toEndorsement = (endorsement: {
   verifierName: string
   verifierRole: string | null
   verifierCompany: string | null
+  verifiedReviewer: boolean
+  reviewerTrustLevel: string
   relationship: string
   message: string
   createdAt: Date
@@ -31,6 +34,8 @@ const toEndorsement = (endorsement: {
   verifierName: endorsement.verifierName,
   verifierRole: endorsement.verifierRole,
   verifierCompany: endorsement.verifierCompany,
+  verifiedReviewer: endorsement.verifiedReviewer,
+  reviewerTrustLevel: endorsement.reviewerTrustLevel,
   relationship: endorsement.relationship as PeerVerification['relationship'],
   message: endorsement.message,
   createdAt: endorsement.createdAt.toISOString(),
@@ -61,6 +66,8 @@ const toProof = (proof: {
     verifierName: string
     verifierRole: string | null
     verifierCompany: string | null
+    verifiedReviewer: boolean
+    reviewerTrustLevel: string
     relationship: string
     message: string
     createdAt: Date
@@ -182,14 +189,24 @@ export async function GET(request: Request) {
     ])
   )
 
+  const sortedReports = [...reports].sort((left, right) => {
+    const trustDelta = getTrustWeight(right.reporterTrustLevel) - getTrustWeight(left.reporterTrustLevel)
+    if (trustDelta !== 0) {
+      return trustDelta
+    }
+
+    return right.createdAt.getTime() - left.createdAt.getTime()
+  })
+
   const response: ModerationQueueResponse = {
-    items: reports.map((report) => ({
+    items: sortedReports.map((report) => ({
       report: {
         id: report.id,
         targetType: report.targetType as 'proof' | 'post',
         targetId: report.targetId,
         reason: report.reason as 'spam' | 'abuse' | 'fraud' | 'misleading' | 'copyright' | 'other',
         details: report.details,
+        reporterTrustLevel: report.reporterTrustLevel,
         status: report.status as 'open' | 'reviewed' | 'dismissed' | 'actioned',
         createdAt: report.createdAt.toISOString(),
         resolvedAt: report.resolvedAt?.toISOString() ?? null,

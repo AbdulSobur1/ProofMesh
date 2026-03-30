@@ -4,12 +4,15 @@ import { prisma } from '@/lib/db'
 import { PeerVerification, Proof } from '@/lib/types'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
+import { syncUserTrustLevel } from '@/lib/services/trust-server'
 
 const toEndorsement = (endorsement: {
   id: string
   verifierName: string
   verifierRole: string | null
   verifierCompany: string | null
+  verifiedReviewer: boolean
+  reviewerTrustLevel: string
   relationship: string
   message: string
   createdAt: Date
@@ -18,6 +21,8 @@ const toEndorsement = (endorsement: {
   verifierName: endorsement.verifierName,
   verifierRole: endorsement.verifierRole,
   verifierCompany: endorsement.verifierCompany,
+  verifiedReviewer: endorsement.verifiedReviewer,
+  reviewerTrustLevel: endorsement.reviewerTrustLevel,
   relationship: endorsement.relationship as PeerVerification['relationship'],
   message: endorsement.message,
   createdAt: endorsement.createdAt.toISOString(),
@@ -48,6 +53,8 @@ const toProof = (proof: {
     verifierName: string
     verifierRole: string | null
     verifierCompany: string | null
+    verifiedReviewer: boolean
+    reviewerTrustLevel: string
     relationship: string
     message: string
     createdAt: Date
@@ -101,6 +108,12 @@ export async function GET(
     return NextResponse.json({ proof: null, user: null, reputation: null }, { status: 404 })
   }
 
+  const syncedUser = await syncUserTrustLevel(user.id)
+  const owner = {
+    ...user,
+    ...syncedUser,
+  }
+
   const ownerProofs = await prisma.proof.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: 'desc' },
@@ -115,17 +128,19 @@ export async function GET(
     proof: toProof(proof),
     user: {
       id: user.id,
-      username: user.username,
-      displayName: user.displayName,
-      headline: user.headline,
-      bio: user.bio,
-      location: user.location,
-      websiteUrl: user.websiteUrl,
-      avatarUrl: user.avatarUrl,
-      currentRole: user.currentRole,
-      currentCompany: user.currentCompany,
-      yearsExperience: user.yearsExperience,
-      createdAt: user.createdAt.toISOString(),
+      username: owner.username,
+      trustLevel: owner.trustLevel,
+      identityVerifiedAt: owner.identityVerifiedAt?.toISOString() ?? null,
+      displayName: owner.displayName,
+      headline: owner.headline,
+      bio: owner.bio,
+      location: owner.location,
+      websiteUrl: owner.websiteUrl,
+      avatarUrl: owner.avatarUrl,
+      currentRole: owner.currentRole,
+      currentCompany: owner.currentCompany,
+      yearsExperience: owner.yearsExperience,
+      createdAt: owner.createdAt.toISOString(),
     },
     reputation: calculateReputation(ownerProofs.map(toProof)),
   })

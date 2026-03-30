@@ -18,6 +18,7 @@ import { filterProofs, getTimeline, sortProofs } from '@/lib/services/proof-anal
 import { ProofControls } from '@/components/dashboard/proof-controls'
 import { ReputationChart } from '@/components/dashboard/reputation-chart'
 import { useProofs } from '@/lib/proof-context'
+import { getTrustLabel, normalizeTrustLevel } from '@/lib/services/trust'
 
 interface ProfilePageProps {
   params: Promise<{
@@ -105,6 +106,15 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     provenSkills.some((tag) => tag.tag.trim().toLowerCase() === entry.name.trim().toLowerCase())
   )
   const unmatchedClaimedSkills = claimedSkills.filter((entry) => !matchedClaimedSkills.some((match) => match.id === entry.id))
+  const trustLevel = normalizeTrustLevel(profileUser?.trustLevel)
+  const trustLabel = getTrustLabel(profileUser?.trustLevel)
+  const hasVerifiedIdentity = Boolean(profileUser?.identityVerifiedAt)
+  const trustBadgeClassName =
+    trustLevel === 'verified'
+      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+      : trustLevel === 'elevated'
+        ? 'border-sky-500/30 bg-sky-500/10 text-sky-300'
+        : 'border-border/60 bg-background/60 text-muted-foreground'
 
   const runNetworkAction = async (input: {
     method: 'POST' | 'PATCH' | 'DELETE'
@@ -155,6 +165,17 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground">
                     <ShieldCheck className="size-3.5 text-primary" />
                     Verified public profile
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary" className={trustBadgeClassName}>
+                      <ShieldCheck className="mr-1 size-3.5" />
+                      {trustLabel}
+                    </Badge>
+                    {hasVerifiedIdentity ? (
+                      <Badge variant="secondary" className="border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                        Identity confirmed
+                      </Badge>
+                    ) : null}
                   </div>
                   <h1 className="mt-4 text-4xl font-semibold tracking-tight capitalize text-foreground sm:text-5xl">
                     {profileName}
@@ -284,6 +305,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     ) : null}
                     <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                       @{username}
+                    </Badge>
+                    <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                      {trustLabel}
                     </Badge>
                   </div>
                 </div>

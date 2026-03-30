@@ -15,6 +15,8 @@ export type PeerVerification = {
   verifierName: string
   verifierRole: string | null
   verifierCompany: string | null
+  verifiedReviewer?: boolean
+  reviewerTrustLevel?: string
   relationship: PeerVerificationRelationship
   message: string
   createdAt: string
@@ -57,6 +59,8 @@ export type Proof = {
 export type ProfessionalProfile = {
   id: string
   username: string
+  trustLevel?: string
+  identityVerifiedAt?: string | null
   displayName: string | null
   headline: string | null
   bio: string | null
@@ -106,6 +110,8 @@ export type ClaimedSkill = {
 export type ProfileUser = {
   id: string
   username: string
+  trustLevel?: string
+  identityVerifiedAt?: string | null
   displayName: string | null
   headline: string | null
   bio: string | null
@@ -141,6 +147,8 @@ export type ProofDetailResponse = {
 export type SessionUser = {
   id: string
   username: string
+  trustLevel?: string
+  identityVerifiedAt?: string | null
   displayName: string | null
   headline: string | null
   location: string | null
@@ -352,6 +360,7 @@ export type ReportRecord = {
   targetId: string
   reason: ReportReason
   details: string | null
+  reporterTrustLevel?: string
   status: ModerationStatus
   createdAt: string
   resolvedAt: string | null

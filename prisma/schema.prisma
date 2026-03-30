@@ -12,6 +12,8 @@ model User {
   id                  String           @id @default(cuid())
   username            String           @unique
   passwordHash        String
+  trustLevel          String           @default("standard")
+  identityVerifiedAt  DateTime?
   displayName         String?
   headline            String?
   bio                 String?
@@ -48,6 +50,7 @@ model User {
   companyFollows       CompanyFollow[]
   companyPosts         CompanyPost[]   @relation("CompanyPostAuthor")
   reports              Report[]
+  reviewedEndorsements ProofEndorsement[]
 }
 
 model Company {
@@ -219,6 +222,7 @@ model Report {
   targetId   String
   reason     String
   details    String?
+  reporterTrustLevel String @default("standard")
   status     String   @default("open")
   createdAt  DateTime @default(now())
   resolvedAt DateTime?
@@ -365,15 +369,20 @@ model ProofEndorsement {
   verifierName    String
   verifierRole    String?
   verifierCompany String?
+  verifiedReviewer Boolean  @default(false)
+  reviewerTrustLevel String @default("standard")
+  reviewerUserId   String?
   relationship    String
   message         String
   createdAt       DateTime @default(now())
   proofId         String
   proof           Proof     @relation(fields: [proofId], references: [id], onDelete: Cascade)
+  reviewerUser    User?     @relation(fields: [reviewerUserId], references: [id], onDelete: SetNull)
 
   @@index([proofId])
   @@index([relationship])
   @@index([createdAt])
+  @@index([reviewerUserId])
 }
 
 model SavedCandidate {

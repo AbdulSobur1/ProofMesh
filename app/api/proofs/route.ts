@@ -9,6 +9,7 @@ import { PROOF_PROFESSIONS, PROOF_TYPES } from '@/lib/proof-taxonomy'
 import { evaluateVerification, parseVerificationSignals, serializeVerificationSignals } from '@/lib/services/verification'
 import { assessProofRisk } from '@/lib/services/risk'
 import { PeerVerification, Proof } from '@/lib/types'
+import { syncUserTrustLevel } from '@/lib/services/trust-server'
 
 const createSchema = z.object({
   title: z.string().min(2),
@@ -24,6 +25,8 @@ const toEndorsementDto = (endorsement: {
   verifierName: string
   verifierRole: string | null
   verifierCompany: string | null
+  verifiedReviewer: boolean
+  reviewerTrustLevel: string
   relationship: string
   message: string
   createdAt: Date
@@ -32,6 +35,8 @@ const toEndorsementDto = (endorsement: {
   verifierName: endorsement.verifierName,
   verifierRole: endorsement.verifierRole,
   verifierCompany: endorsement.verifierCompany,
+  verifiedReviewer: endorsement.verifiedReviewer,
+  reviewerTrustLevel: endorsement.reviewerTrustLevel,
   relationship: endorsement.relationship as PeerVerification['relationship'],
   message: endorsement.message,
   createdAt: endorsement.createdAt.toISOString(),
@@ -61,6 +66,8 @@ const toProofDto = (proof: {
     verifierName: string
     verifierRole: string | null
     verifierCompany: string | null
+    verifiedReviewer: boolean
+    reviewerTrustLevel: string
     relationship: string
     message: string
     createdAt: Date
@@ -199,26 +206,31 @@ export async function POST(request: Request) {
           targetType: 'proof',
           targetId: proof.id,
           reason: 'fraud',
-          details: `Automatically flagged during submission review. Risk score ${risk.score}/100. ${risk.flags.join(' | ')}`,
-          reporterId: user.id,
-        },
+        details: `Automatically flagged during submission review. Risk score ${risk.score}/100. ${risk.flags.join(' | ')}`,
+        reporterId: user.id,
+        reporterTrustLevel: user.trustLevel ?? 'standard',
+      },
       })
     }
 
+    const syncedUser = await syncUserTrustLevel(user.id)
+
     return NextResponse.json({
       user: {
-        id: user.id,
-        username: user.username,
-        displayName: user.displayName,
-        headline: user.headline,
+        id: syncedUser?.id ?? user.id,
+        username: syncedUser?.username ?? user.username,
+        trustLevel: syncedUser?.trustLevel ?? user.trustLevel,
+        identityVerifiedAt: syncedUser?.identityVerifiedAt?.toISOString() ?? user.identityVerifiedAt?.toISOString() ?? null,
+        displayName: syncedUser?.displayName ?? user.displayName,
+        headline: syncedUser?.headline ?? user.headline,
         bio: user.bio,
-        location: user.location,
+        location: syncedUser?.location ?? user.location,
         websiteUrl: user.websiteUrl,
-        avatarUrl: user.avatarUrl,
-        currentRole: user.currentRole,
-        currentCompany: user.currentCompany,
+        avatarUrl: syncedUser?.avatarUrl ?? user.avatarUrl,
+        currentRole: syncedUser?.currentRole ?? user.currentRole,
+        currentCompany: syncedUser?.currentCompany ?? user.currentCompany,
         yearsExperience: user.yearsExperience,
-        createdAt: user.createdAt.toISOString(),
+        createdAt: (syncedUser?.createdAt ?? user.createdAt).toISOString(),
       },
       proof: toProofDto(proof),
     })

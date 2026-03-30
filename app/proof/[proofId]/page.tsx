@@ -26,6 +26,7 @@ import { ProofDetailResponse, type PeerVerificationRelationship } from '@/lib/ty
 import { PROFESSION_LABELS, PROOF_TYPE_LABELS, type ProofProfession, type ProofType } from '@/lib/proof-taxonomy'
 import { getVerificationMeta } from '@/lib/services/verification'
 import { useProofs } from '@/lib/proof-context'
+import { getTrustLabel, normalizeTrustLevel } from '@/lib/services/trust'
 
 interface ProofDetailPageProps {
   params: {
@@ -97,6 +98,14 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
   const proofTypeLabel = proof ? PROOF_TYPE_LABELS[proof.proofType as ProofType] ?? proof.proofType : ''
   const verificationMeta = proof ? getVerificationMeta(proof.verificationStatus) : null
   const moderationLabel = proof?.moderationStatus === 'removed' ? 'Removed' : proof?.moderationStatus === 'under_review' ? 'Under review' : null
+  const ownerTrustLevel = normalizeTrustLevel(data?.user?.trustLevel)
+  const ownerTrustLabel = getTrustLabel(data?.user?.trustLevel)
+  const ownerTrustBadgeClassName =
+    ownerTrustLevel === 'verified'
+      ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+      : ownerTrustLevel === 'elevated'
+        ? 'border-sky-500/20 bg-sky-500/10 text-sky-300'
+        : 'border-white/10 bg-white/[0.04] text-foreground'
 
   const relationshipLabel = useMemo(
     () => Object.fromEntries(RELATIONSHIP_OPTIONS.map((option) => [option.value, option.label])) as Record<PeerVerificationRelationship, string>,
@@ -302,6 +311,16 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Owner</p>
                       <p className="mt-2 text-sm font-medium text-foreground">{data.user.username}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Badge variant="secondary" className={ownerTrustBadgeClassName}>
+                          {ownerTrustLabel}
+                        </Badge>
+                        {data.user.identityVerifiedAt ? (
+                          <Badge variant="secondary" className="border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                            Identity verified
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Reputation</p>
@@ -356,6 +375,18 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                                 <p className="text-sm font-semibold text-foreground">{endorsement.verifierName}</p>
                                 <Badge variant="secondary" className="border border-white/10 bg-white/5 text-foreground">
                                   {relationshipLabel[endorsement.relationship]}
+                                </Badge>
+                                <Badge
+                                  variant="secondary"
+                                  className={
+                                    endorsement.verifiedReviewer
+                                      ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                                      : endorsement.reviewerTrustLevel === 'elevated' || endorsement.reviewerTrustLevel === 'verified'
+                                        ? 'border border-sky-500/20 bg-sky-500/10 text-sky-300'
+                                        : 'border border-white/10 bg-white/5 text-foreground'
+                                  }
+                                >
+                                  {endorsement.verifiedReviewer ? 'Verified reviewer' : getTrustLabel(endorsement.reviewerTrustLevel)}
                                 </Badge>
                               </div>
                               <p className="mt-1 text-xs text-muted-foreground">
@@ -432,6 +463,9 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Verified Owner</p>
                         <p className="mt-1 text-sm text-foreground">{data.user.username}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {data.user.identityVerifiedAt ? 'Identity checked' : ownerTrustLabel}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">

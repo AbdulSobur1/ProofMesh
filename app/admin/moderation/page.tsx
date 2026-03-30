@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ModerationQueueItem, ModerationQueueResponse } from '@/lib/types'
 import { useProofs } from '@/lib/proof-context'
+import { getTrustLabel, normalizeTrustLevel } from '@/lib/services/trust'
 
 export default function ModerationPage() {
   const { currentUser } = useProofs()
@@ -125,7 +126,16 @@ export default function ModerationPage() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {items.map((item) => (
+                  {items.map((item) => {
+                    const trustLevel = normalizeTrustLevel(item.report.reporterTrustLevel)
+                    const trustClassName =
+                      trustLevel === 'verified'
+                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                        : trustLevel === 'elevated'
+                          ? 'border-sky-500/30 bg-sky-500/10 text-sky-300'
+                          : 'border-border/60 bg-background/60 text-muted-foreground'
+
+                    return (
                     <Card key={item.report.id} className="rounded-[2rem] border border-border/60 p-6">
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -138,6 +148,9 @@ export default function ModerationPage() {
                             </Badge>
                             <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                               {item.report.status}
+                            </Badge>
+                            <Badge variant="secondary" className={trustClassName}>
+                              {getTrustLabel(item.report.reporterTrustLevel)}
                             </Badge>
                           </div>
                           <p className="mt-3 text-sm font-semibold text-foreground">
@@ -190,7 +203,8 @@ export default function ModerationPage() {
                         </div>
                       </div>
                     </Card>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </section>

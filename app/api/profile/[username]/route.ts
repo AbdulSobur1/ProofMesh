@@ -6,6 +6,7 @@ import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
 import { emptyNetworkCounts, resolveProfileConnectionState } from '@/lib/services/network'
 import { getCurrentToken } from '@/lib/auth-options'
+import { syncUserTrustLevel } from '@/lib/services/trust-server'
 
 const recentViewerSelect = {
   id: true,
@@ -22,6 +23,8 @@ const toEndorsement = (endorsement: {
   verifierName: string
   verifierRole: string | null
   verifierCompany: string | null
+  verifiedReviewer: boolean
+  reviewerTrustLevel: string
   relationship: string
   message: string
   createdAt: Date
@@ -30,6 +33,8 @@ const toEndorsement = (endorsement: {
   verifierName: endorsement.verifierName,
   verifierRole: endorsement.verifierRole,
   verifierCompany: endorsement.verifierCompany,
+  verifiedReviewer: endorsement.verifiedReviewer,
+  reviewerTrustLevel: endorsement.reviewerTrustLevel,
   relationship: endorsement.relationship as PeerVerification['relationship'],
   message: endorsement.message,
   createdAt: endorsement.createdAt.toISOString(),
@@ -57,6 +62,8 @@ const toProof = (proof: {
     verifierName: string
     verifierRole: string | null
     verifierCompany: string | null
+    verifiedReviewer: boolean
+    reviewerTrustLevel: string
     relationship: string
     message: string
     createdAt: Date
@@ -198,6 +205,12 @@ export async function GET(
     })
   }
 
+  const syncedUser = await syncUserTrustLevel(user.id)
+  const profileUser = {
+    ...user,
+    ...syncedUser,
+  }
+
   if (viewerUserId && viewerUserId !== user.id) {
     await prisma.profileView.upsert({
       where: {
@@ -286,17 +299,19 @@ export async function GET(
   return NextResponse.json({
     user: {
       id: user.id,
-      username: user.username,
-      displayName: user.displayName,
-      headline: user.headline,
-      bio: user.bio,
-      location: user.location,
-      websiteUrl: user.websiteUrl,
-      avatarUrl: user.avatarUrl,
-      currentRole: user.currentRole,
-      currentCompany: user.currentCompany,
-      yearsExperience: user.yearsExperience,
-      createdAt: user.createdAt.toISOString(),
+      username: profileUser.username,
+      trustLevel: profileUser.trustLevel,
+      identityVerifiedAt: profileUser.identityVerifiedAt?.toISOString() ?? null,
+      displayName: profileUser.displayName,
+      headline: profileUser.headline,
+      bio: profileUser.bio,
+      location: profileUser.location,
+      websiteUrl: profileUser.websiteUrl,
+      avatarUrl: profileUser.avatarUrl,
+      currentRole: profileUser.currentRole,
+      currentCompany: profileUser.currentCompany,
+      yearsExperience: profileUser.yearsExperience,
+      createdAt: profileUser.createdAt.toISOString(),
     },
     proofs: proofDtos,
     reputation,

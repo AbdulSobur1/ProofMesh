@@ -3,7 +3,9 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { parseTags } from '@/lib/services/tags'
 import { evaluateVerification, serializeVerificationSignals } from '@/lib/services/verification'
+import { getCurrentToken } from '@/lib/auth-options'
 import { PeerVerification, type PeerVerificationRelationship } from '@/lib/types'
+import { syncUserTrustLevel } from '@/lib/services/trust-server'
 
 const RELATIONSHIPS = ['peer', 'client', 'manager', 'collaborator'] as const
 
@@ -20,6 +22,8 @@ const toEndorsement = (endorsement: {
   verifierName: string
   verifierRole: string | null
   verifierCompany: string | null
+  verifiedReviewer: boolean
+  reviewerTrustLevel: string
   relationship: string
   message: string
   createdAt: Date
@@ -28,6 +32,8 @@ const toEndorsement = (endorsement: {
   verifierName: endorsement.verifierName,
   verifierRole: endorsement.verifierRole,
   verifierCompany: endorsement.verifierCompany,
+  verifiedReviewer: endorsement.verifiedReviewer,
+  reviewerTrustLevel: endorsement.reviewerTrustLevel,
   relationship: endorsement.relationship as PeerVerificationRelationship,
   message: endorsement.message,
   createdAt: endorsement.createdAt.toISOString(),
@@ -52,6 +58,8 @@ export async function POST(
   try {
     const body = await request.json()
     const input = endorsementSchema.parse(body)
+    const token = await getCurrentToken(request)
+    const reviewer = token?.sub ? await syncUserTrustLevel(token.sub) : null
 
     const proof = await prisma.proof.findUnique({
       where: { id: params.proofId },
@@ -69,9 +77,12 @@ export async function POST(
     const created = await prisma.proofEndorsement.create({
       data: {
         proofId: proof.id,
-        verifierName: input.verifierName,
+        verifierName: reviewer?.username ?? input.verifierName,
         verifierRole: input.verifierRole || null,
         verifierCompany: input.verifierCompany || null,
+        verifiedReviewer: Boolean(reviewer?.identityVerifiedAt),
+        reviewerTrustLevel: reviewer?.trustLevel ?? 'standard',
+        reviewerUserId: reviewer?.id ?? null,
         relationship: input.relationship,
         message: input.message,
       },

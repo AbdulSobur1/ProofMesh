@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { toConnectionRecord } from '@/lib/services/network'
 import { createNotification } from '@/lib/services/notifications'
+import { syncUserTrustLevel } from '@/lib/services/trust-server'
 
 const actionSchema = z.object({
   action: z.enum(['accept', 'decline', 'cancel']),
@@ -83,6 +84,11 @@ export async function PATCH(
         body: `@${accepted.recipient.username} accepted your connection request.`,
         link: `/profile/${encodeURIComponent(accepted.recipient.username)}`,
       })
+
+      await Promise.all([
+        syncUserTrustLevel(accepted.requester.id),
+        syncUserTrustLevel(accepted.recipient.id),
+      ])
 
       return NextResponse.json({ connection: toConnectionRecord(accepted) })
     }
