@@ -34,7 +34,7 @@ export function Sidebar() {
     },
     {
       href: '/discover/jobs',
-      label: 'Custom Jobs',
+      label: 'Recruiter Jobs',
       icon: BriefcaseBusiness,
     },
     {
@@ -51,6 +51,11 @@ export function Sidebar() {
       href: '/messages',
       label: 'Messages',
       icon: Mail,
+    },
+    {
+      href: '/jobs',
+      label: 'Jobs Board',
+      icon: BriefcaseBusiness,
     },
     {
       href: '/feed',

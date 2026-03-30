@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-const authenticatedPages = ['/dashboard', '/discover', '/submit', '/profile', '/proof', '/network', '/messages', '/feed']
+const authenticatedPages = ['/dashboard', '/discover', '/submit', '/profile', '/proof', '/network', '/messages', '/feed', '/jobs']
 const publicAuthPages = ['/', '/login', '/signup']
 const protectedApiPrefixes = ['/api/discovery', '/api/jobs', '/api/profile', '/api/proofs', '/api/reputation', '/api/network', '/api/messages', '/api/feed']
 const authApiPrefixes = ['/api/auth']
@@ -56,6 +56,7 @@ export const config = {
     '/network/:path*',
     '/messages/:path*',
     '/feed/:path*',
+    '/jobs/:path*',
     '/submit/:path*',
     '/profile/:path*',
     '/proof/:path*',

@@ -367,6 +367,18 @@ export type JobPost = {
   updatedAt: string
 }
 
+export type JobApplicationStatus = 'submitted' | 'reviewing' | 'shortlisted' | 'rejected'
+
+export type JobApplication = {
+  id: string
+  status: JobApplicationStatus
+  note: string | null
+  createdAt: string
+  updatedAt: string
+  applicant: ConnectionPreviewUser
+  selectedProof: Proof | null
+}
+
 export type JobPostsResponse = {
   jobs: JobPost[]
 }
@@ -374,4 +386,18 @@ export type JobPostsResponse = {
 export type JobMatchResponse = {
   job: JobPost
   matches: RoleMatch[]
+}
+
+export type CandidateJobPost = JobPost & {
+  hasApplied: boolean
+  applicationStatus: JobApplicationStatus | null
+}
+
+export type CandidateJobsResponse = {
+  jobs: CandidateJobPost[]
+}
+
+export type JobApplicationsResponse = {
+  job: JobPost
+  applications: JobApplication[]
 }

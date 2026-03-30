@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, PlusCircle, Target } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, PlusCircle, Target, Users } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PROFESSION_LABELS, PROOF_PROFESSIONS, PROOF_TYPE_LABELS, PROOF_TYPES, type ProofProfession, type ProofType } from '@/lib/proof-taxonomy'
-import { JobMatchResponse, JobPost, JobPostsResponse } from '@/lib/types'
+import { JobApplication, JobApplicationsResponse, JobMatchResponse, JobPost, JobPostsResponse } from '@/lib/types'
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<JobPost[]>([])
@@ -20,9 +20,12 @@ export default function JobsPage() {
   const [matchData, setMatchData] = useState<JobMatchResponse | null>(null)
   const [isLoadingJobs, setIsLoadingJobs] = useState(true)
   const [isLoadingMatches, setIsLoadingMatches] = useState(false)
+  const [isLoadingApplications, setIsLoadingApplications] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [updatingApplicationId, setUpdatingApplicationId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
+  const [applications, setApplications] = useState<JobApplication[]>([])
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -74,6 +77,32 @@ export default function JobsPage() {
     }
 
     loadMatches()
+  }, [selectedJobId])
+
+  useEffect(() => {
+    const loadApplications = async () => {
+      if (!selectedJobId) {
+        setApplications([])
+        return
+      }
+
+      setIsLoadingApplications(true)
+      setError(null)
+      try {
+        const response = await fetch(`/api/jobs/${encodeURIComponent(selectedJobId)}/applications`, {
+          cache: 'no-store',
+        })
+        if (!response.ok) throw new Error('Failed to load applications')
+        const payload = (await response.json()) as JobApplicationsResponse
+        setApplications(payload.applications)
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : 'Something went wrong')
+      } finally {
+        setIsLoadingApplications(false)
+      }
+    }
+
+    loadApplications()
   }, [selectedJobId])
 
   const selectedJob = useMemo(() => jobs.find((job) => job.id === selectedJobId) ?? null, [jobs, selectedJobId])
@@ -131,6 +160,42 @@ export default function JobsPage() {
       setFormError(createError instanceof Error ? createError.message : 'Failed to create job')
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  const updateApplicationStatus = async (
+    applicationId: string,
+    status: 'submitted' | 'reviewing' | 'shortlisted' | 'rejected'
+  ) => {
+    if (!selectedJobId) return
+
+    setUpdatingApplicationId(applicationId)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/jobs/${encodeURIComponent(selectedJobId)}/applications/${encodeURIComponent(applicationId)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status }),
+        }
+      )
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to update application')
+      }
+
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === applicationId ? payload.application : application
+        )
+      )
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : 'Failed to update application')
+    } finally {
+      setUpdatingApplicationId(null)
     }
   }
 
@@ -313,6 +378,99 @@ export default function JobsPage() {
                   ))}
                 </div>
               )}
+
+              <div className="mt-10">
+                <div className="mb-5 flex items-center gap-3">
+                  <h2 className="text-2xl font-semibold tracking-tight text-foreground">Applicants</h2>
+                  {selectedJob ? (
+                    <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                      {applications.length} total
+                    </Badge>
+                  ) : null}
+                </div>
+
+                {isLoadingApplications ? (
+                  <div className="grid gap-4">
+                    {Array.from({ length: 3 }).map((_, index) => (
+                      <Skeleton key={index} className="h-[240px] w-full rounded-[2rem]" />
+                    ))}
+                  </div>
+                ) : !selectedJob ? (
+                  <Card className="rounded-[2rem] border border-dashed border-border/60 p-12 text-center">
+                    <p className="text-sm text-muted-foreground">Select a job to review applicants.</p>
+                  </Card>
+                ) : applications.length === 0 ? (
+                  <Card className="rounded-[2rem] border border-dashed border-border/60 p-12 text-center">
+                    <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Users className="size-8" />
+                    </div>
+                    <h3 className="mt-5 text-lg font-semibold text-foreground">No applications yet</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      Applications will appear here once candidates start applying with proof-backed context.
+                    </p>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {applications.map((application) => (
+                      <Card key={application.id} className="rounded-[2rem] border border-border/60 p-6 shadow-[0_20px_60px_rgba(2,8,23,0.06)]">
+                        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-2xl font-semibold tracking-tight text-foreground">
+                                {application.applicant.displayName || application.applicant.username}
+                              </h3>
+                              <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                                @{application.applicant.username}
+                              </Badge>
+                              <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                                {application.status}
+                              </Badge>
+                            </div>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                              {application.applicant.headline || [application.applicant.currentRole, application.applicant.currentCompany].filter(Boolean).join(' at ') || 'Proof-backed candidate'}
+                            </p>
+                            {application.note ? (
+                              <div className="mt-4 rounded-2xl border border-border/60 bg-background/60 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Candidate note</p>
+                                <p className="mt-2 text-sm leading-6 text-foreground/85">{application.note}</p>
+                              </div>
+                            ) : null}
+                            {application.selectedProof ? (
+                              <div className="mt-4 rounded-2xl border border-border/60 bg-background/60 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Attached proof</p>
+                                <p className="mt-2 text-sm font-semibold text-foreground">{application.selectedProof.title}</p>
+                                <p className="mt-1 text-sm text-muted-foreground">{application.selectedProof.score}/10 score • {application.selectedProof.verificationConfidence}% trust</p>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="min-w-[280px] space-y-3">
+                            <Button className="w-full" variant={application.status === 'reviewing' ? 'default' : 'outline'} onClick={() => updateApplicationStatus(application.id, 'reviewing')} disabled={updatingApplicationId === application.id}>
+                              Mark reviewing
+                            </Button>
+                            <Button className="w-full" variant={application.status === 'shortlisted' ? 'default' : 'outline'} onClick={() => updateApplicationStatus(application.id, 'shortlisted')} disabled={updatingApplicationId === application.id}>
+                              Shortlist
+                            </Button>
+                            <Button className="w-full" variant={application.status === 'rejected' ? 'default' : 'outline'} onClick={() => updateApplicationStatus(application.id, 'rejected')} disabled={updatingApplicationId === application.id}>
+                              Reject
+                            </Button>
+                            <div className="flex gap-2">
+                              <Button asChild variant="outline" className="flex-1">
+                                <Link href={`/profile/${encodeURIComponent(application.applicant.username)}`}>View profile</Link>
+                              </Button>
+                              {application.selectedProof ? (
+                                <Button asChild variant="outline" className="flex-1">
+                                  <Link href={`/proof/${application.selectedProof.id}`}>Review proof</Link>
+                                </Button>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

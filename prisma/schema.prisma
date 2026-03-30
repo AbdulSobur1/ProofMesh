@@ -32,6 +32,7 @@ model User {
   conversationMemberships ConversationParticipant[]
   sentMessages        Message[]
   posts               Post[]
+  jobApplications     JobApplication[]
   savedCandidates     SavedCandidate[] @relation("RecruiterSavedCandidates")
   candidateShortlists SavedCandidate[] @relation("CandidateSavedByRecruiters")
   jobs                JobPost[]
@@ -181,6 +182,7 @@ model Proof {
   user                   User               @relation(fields: [userId], references: [id])
   endorsements           ProofEndorsement[]
   posts                  Post[]
+  jobApplications        JobApplication[]
 
   @@index([userId])
   @@index([createdAt])
@@ -230,8 +232,28 @@ model JobPost {
   updatedAt           DateTime @updatedAt
   recruiterId         String
   recruiter           User     @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  applications        JobApplication[]
 
   @@index([recruiterId])
   @@index([profession])
+  @@index([createdAt])
+}
+
+model JobApplication {
+  id             String   @id @default(cuid())
+  status         String   @default("submitted")
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  jobId          String
+  applicantId    String
+  selectedProofId String?
+  job            JobPost  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicant      User     @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  selectedProof  Proof?   @relation(fields: [selectedProofId], references: [id], onDelete: SetNull)
+
+  @@unique([jobId, applicantId])
+  @@index([jobId, status])
+  @@index([applicantId, status])
   @@index([createdAt])
 }
