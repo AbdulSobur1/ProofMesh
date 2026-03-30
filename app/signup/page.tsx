@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Loader2, Mail, Lock, ShieldCheck, Sparkles, ArrowRight, CheckCircle2, ChevronLeft } from 'lucide-react'
+import { useProofs } from '@/lib/proof-context'
 
 type SignupPhase = 'email' | 'verify' | 'done'
 
@@ -23,6 +24,7 @@ async function safeJson<T>(response: Response): Promise<T | null> {
 
 export default function SignupPage() {
   const router = useRouter()
+  const { currentUser, isLoading: isSessionLoading } = useProofs()
   const [phase, setPhase] = useState<SignupPhase>('email')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -51,6 +53,12 @@ export default function SignupPage() {
 
     loadProviders()
   }, [])
+
+  useEffect(() => {
+    if (!isSessionLoading && currentUser) {
+      router.replace('/dashboard')
+    }
+  }, [currentUser, isSessionLoading, router])
 
   const handleSendCode = async () => {
     const normalizedEmail = email.trim()

@@ -1,8 +1,9 @@
 "use client"
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { signOut as nextSignOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { MeResponse, ProfileResponse, Proof, Reputation, SessionUser, type ProofEvidenceItem, type ProofSourceCategory } from '@/lib/types'
 import { type ProofProfession, type ProofType } from '@/lib/proof-taxonomy'
 
@@ -42,12 +43,13 @@ const emptyReputation: Reputation = {
 
 export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter()
-  const pathname = usePathname()
+  const { status } = useSession()
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null)
   const [proofs, setProofs] = useState<Proof[]>([])
   const [reputation, setReputation] = useState<Reputation>(emptyReputation)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const hasHydrated = useRef(false)
 
   const loadProfile = useCallback(async (username: string) => {
     const response = await fetch(`/api/profile/${encodeURIComponent(username)}`, { cache: 'no-store' })
@@ -61,7 +63,6 @@ export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [])
 
   const refresh = useCallback(async () => {
-    setIsLoading(true)
     setError(null)
 
     try {
@@ -85,13 +86,22 @@ export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setReputation(emptyReputation)
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
+      hasHydrated.current = true
       setIsLoading(false)
     }
   }, [loadProfile])
 
   useEffect(() => {
-    refresh()
-  }, [refresh, pathname])
+    if (status === 'loading') {
+      if (!hasHydrated.current) {
+        setIsLoading(true)
+      }
+      return
+    }
+
+    setIsLoading((current) => current && !hasHydrated.current)
+    void refresh()
+  }, [refresh, status])
 
   const addProof = async (proof: AddProofInput): Promise<Proof> => {
     const response = await fetch('/api/proofs', {

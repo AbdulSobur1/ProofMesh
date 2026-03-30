@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Loader2, Mail, ShieldCheck, Sparkles, ArrowRight, ChevronLeft } from 'lucide-react'
+import { useProofs } from '@/lib/proof-context'
 
 type LoginPhase = 'email' | 'code'
 
@@ -23,6 +24,7 @@ async function safeJson<T>(response: Response): Promise<T | null> {
 
 export default function LoginPage() {
   const router = useRouter()
+  const { currentUser, isLoading: isSessionLoading } = useProofs()
   const [phase, setPhase] = useState<LoginPhase>('email')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -48,6 +50,12 @@ export default function LoginPage() {
     }
     loadProviders()
   }, [])
+
+  useEffect(() => {
+    if (!isSessionLoading && currentUser) {
+      router.replace('/dashboard')
+    }
+  }, [currentUser, isSessionLoading, router])
 
   const startOAuth = async (provider: 'google' | 'apple') => {
     setProviderLoading(provider)
