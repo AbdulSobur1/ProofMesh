@@ -89,6 +89,7 @@ export const toFeedPost = (post: {
     verifiedAt: Date | null
     createdAt: Date
   } | null
+  reposts: Array<{ userId: string }>
   likes: Array<{ userId: string }>
   comments: Array<{ id: string }>
 }, currentUserId: string): FeedPost => ({
@@ -109,6 +110,8 @@ export const toFeedPost = (post: {
   proof: post.proof ? toProof(post.proof) : null,
   likeCount: post.likes.length,
   commentCount: post.comments.length,
+  repostCount: post.reposts.length,
+  repostedByViewer: post.reposts.some((repost) => repost.userId === currentUserId),
   likedByViewer: post.likes.some((like) => like.userId === currentUserId),
 })
 

@@ -34,6 +34,7 @@ model User {
   conversationMemberships ConversationParticipant[]
   sentMessages        Message[]
   posts               Post[]
+  reposts             PostRepost[]
   postLikes           PostLike[]
   postComments        PostComment[]
   jobApplications     JobApplication[]
@@ -248,12 +249,26 @@ model Post {
   proofId     String?
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   proof       Proof?   @relation(fields: [proofId], references: [id], onDelete: SetNull)
+  reposts     PostRepost[]
   likes       PostLike[]
   comments    PostComment[]
 
   @@index([userId, createdAt])
   @@index([proofId])
   @@index([createdAt])
+}
+
+model PostRepost {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model PostLike {

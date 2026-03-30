@@ -198,6 +198,7 @@ export type NotificationType =
   | 'endorsement_request_declined'
   | 'post_liked'
   | 'post_commented'
+  | 'post_reposted'
   | 'job_application_submitted'
   | 'job_application_status'
 
@@ -324,6 +325,8 @@ export type FeedPost = {
   moderationStatus?: 'active' | 'under_review' | 'removed'
   likeCount: number
   commentCount: number
+  repostCount: number
+  repostedByViewer: boolean
   likedByViewer: boolean
 }
 

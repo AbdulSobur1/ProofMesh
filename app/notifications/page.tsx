@@ -28,6 +28,7 @@ const iconByType = {
   endorsement_request_declined: MessageSquareQuote,
   post_liked: Bell,
   post_commented: MessageCircle,
+  post_reposted: MessageCircle,
   job_application_submitted: BriefcaseBusiness,
   job_application_status: BriefcaseBusiness,
 } as const

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Flag, Heart, MessageCircle, Newspaper, Send } from 'lucide-react'
+import { Flag, Heart, MessageCircle, Newspaper, Repeat2, Send } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -190,6 +190,25 @@ export default function FeedPage() {
     }
   }
 
+  const toggleRepost = async (postId: string) => {
+    setEngagingPostId(postId)
+    setError(null)
+    try {
+      const response = await fetch(`/api/feed/${encodeURIComponent(postId)}/repost`, {
+        method: 'POST',
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to update repost')
+      }
+      await load()
+    } catch (repostError) {
+      setError(repostError instanceof Error ? repostError.message : 'Failed to update repost')
+    } finally {
+      setEngagingPostId(null)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
@@ -360,6 +379,17 @@ export default function FeedPage() {
                           >
                             <MessageCircle className="size-4" />
                             {post.commentCount} comment{post.commentCount === 1 ? '' : 's'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleRepost(post.id)}
+                            disabled={engagingPostId === post.id}
+                            className={post.repostedByViewer ? 'border-sky-500/30 bg-sky-500/10 text-sky-400' : ''}
+                          >
+                            <Repeat2 className="size-4" />
+                            {post.repostCount} repost{post.repostCount === 1 ? '' : 's'}
                           </Button>
                           <Button
                             type="button"

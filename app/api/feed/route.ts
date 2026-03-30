@@ -58,11 +58,31 @@ const postInclude = {
       id: true,
     },
   },
+  reposts: {
+    select: {
+      userId: true,
+    },
+  },
 } as const
 
 async function getCurrentUserId(request: Request) {
   const token = await getCurrentToken(request)
   return token?.sub ?? null
+}
+
+const getFeedScore = (post: {
+  createdAt: Date
+  likes: Array<{ userId: string }>
+  comments: Array<{ id: string }>
+  reposts: Array<{ userId: string }>
+  proof: object | null
+}) => {
+  const ageHours = Math.max(1, (Date.now() - post.createdAt.getTime()) / (1000 * 60 * 60))
+  const engagementScore = post.likes.length * 2 + post.comments.length * 3 + post.reposts.length * 4
+  const proofBoost = post.proof ? 6 : 0
+  const freshnessScore = Math.max(1, 48 - ageHours) / 4
+
+  return engagementScore + proofBoost + freshnessScore
 }
 
 export async function GET(request: Request) {
@@ -106,8 +126,10 @@ export async function GET(request: Request) {
     take: 50,
   })
 
+  const rankedPosts = [...posts].sort((left, right) => getFeedScore(right) - getFeedScore(left))
+
   return NextResponse.json({
-    posts: posts.map((post) => toFeedPost(post, currentUserId)),
+    posts: rankedPosts.map((post) => toFeedPost(post, currentUserId)),
   })
 }
 
