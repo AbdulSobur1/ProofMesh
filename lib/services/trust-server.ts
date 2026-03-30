@@ -15,6 +15,7 @@ const trustUserSelect = {
   currentRole: true,
   currentCompany: true,
   yearsExperience: true,
+  walletAddress: true,
   createdAt: true,
 } as const
 

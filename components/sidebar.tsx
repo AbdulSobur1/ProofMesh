@@ -5,10 +5,9 @@ import { usePathname } from 'next/navigation'
 import { BarChart3, Bell, BookmarkCheck, BriefcaseBusiness, Building2, CheckSquare, Compass, Mail, Newspaper, Plus, Search, ShieldAlert, Target, User, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useProofs } from '@/lib/proof-context'
+import { SessionUser } from '@/lib/types'
 
-export function Sidebar() {
-  const pathname = usePathname()
-  const { currentUser } = useProofs()
+export const buildSidebarLinks = (currentUser: SessionUser | null) => {
   const profileHref = currentUser ? `/profile/${encodeURIComponent(currentUser.username)}` : '/login'
 
   const links = [
@@ -91,6 +90,14 @@ export function Sidebar() {
       icon: ShieldAlert,
     })
   }
+
+  return links
+}
+
+export function Sidebar() {
+  const pathname = usePathname()
+  const { currentUser } = useProofs()
+  const links = buildSidebarLinks(currentUser)
 
   return (
     <aside className="fixed left-0 top-0 hidden h-screen w-72 flex-col border-r border-border/60 bg-sidebar/90 backdrop-blur md:flex">

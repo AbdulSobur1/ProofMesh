@@ -99,17 +99,27 @@ export const authOptions: NextAuthOptions = {
           where: { username: email },
         })
 
-        const resolvedUser =
-          existing ??
-          (await prisma.user.create({
-            data: {
-              username: email,
-              passwordHash: await hashPassword(randomUUID()),
-            },
-          }))
+        const resolvedUser = existing
+          ? await prisma.user.update({
+              where: { id: existing.id },
+              data: {
+                displayName: user.name?.trim() || existing.displayName,
+                avatarUrl: user.image || existing.avatarUrl,
+              },
+            })
+          : await prisma.user.create({
+              data: {
+                username: email,
+                passwordHash: await hashPassword(randomUUID()),
+                displayName: user.name?.trim() || null,
+                avatarUrl: user.image || null,
+              },
+            })
 
         ;(user as any).id = resolvedUser.id
         ;(user as any).username = resolvedUser.username
+        ;(user as any).name = resolvedUser.displayName ?? user.name
+        ;(user as any).image = resolvedUser.avatarUrl ?? user.image
       }
 
       return true
@@ -122,11 +132,19 @@ export const authOptions: NextAuthOptions = {
         token.username = (user as any).username ?? token.username
       }
 
-      if (!token.username && token.email) {
-        const dbUser = await prisma.user.findUnique({ where: { username: token.email } })
+      const lookupUsername =
+        typeof token.username === 'string'
+          ? token.username
+          : typeof token.email === 'string'
+            ? token.email
+            : null
+      if (lookupUsername) {
+        const dbUser = await prisma.user.findUnique({ where: { username: lookupUsername } })
         if (dbUser) {
           token.sub = dbUser.id
           token.username = dbUser.username
+          token.name = dbUser.displayName ?? token.name
+          token.picture = dbUser.avatarUrl ?? token.picture
         }
       }
 
@@ -136,6 +154,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         ;(session.user as any).id = token.sub
         ;(session.user as any).username = token.username ?? session.user.email ?? 'builder'
+        session.user.name = token.name ?? session.user.name
+        session.user.email = token.email ?? session.user.email
+        session.user.image = typeof token.picture === 'string' ? token.picture : session.user.image
       }
       return session
     },

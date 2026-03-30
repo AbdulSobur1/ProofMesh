@@ -22,6 +22,7 @@ export async function GET(request: Request) {
     avatarUrl: string | null
     currentRole: string | null
     currentCompany: string | null
+    walletAddress?: string | null
     createdAt: Date
   }) => ({
     id: user.id,
@@ -34,8 +35,10 @@ export async function GET(request: Request) {
     avatarUrl: user.avatarUrl,
     currentRole: user.currentRole,
     currentCompany: user.currentCompany,
+    walletAddress: user.walletAddress ?? null,
     createdAt: user.createdAt.toISOString(),
     isAdmin: isAdminUsername(user.username),
+    email: user.username,
   })
 
   const token = await getCurrentToken(request)
