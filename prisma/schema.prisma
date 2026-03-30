@@ -53,6 +53,7 @@ model User {
   reviewedEndorsements ProofEndorsement[]
   sentEndorsementRequests     ProofEndorsementRequest[] @relation("EndorsementRequestRequester")
   receivedEndorsementRequests ProofEndorsementRequest[] @relation("EndorsementRequestRecipient")
+  savedJobs            SavedJob[]
 }
 
 model Company {
@@ -440,10 +441,24 @@ model JobPost {
   recruiter           User     @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
   company             Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   applications        JobApplication[]
+  savedByUsers        SavedJob[]
 
   @@index([recruiterId])
   @@index([profession])
   @@index([createdAt])
+}
+
+model SavedJob {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  jobId     String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       JobPost  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+  @@index([userId, createdAt])
+  @@index([jobId, createdAt])
 }
 
 model JobApplication {

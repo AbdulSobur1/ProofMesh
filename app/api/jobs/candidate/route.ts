@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { CandidateJobsResponse } from '@/lib/types'
-import { toJobPostDto } from '@/lib/services/jobs'
+import { toJobApplicationDto, toJobPostDto } from '@/lib/services/jobs'
 
 export async function GET(request: Request) {
   const token = await getCurrentToken(request)
@@ -24,7 +24,57 @@ export async function GET(request: Request) {
         },
         take: 1,
       },
+      savedByUsers: {
+        where: {
+          userId: currentUserId,
+        },
+        select: {
+          id: true,
+        },
+        take: 1,
+      },
+      company: true,
     },
+  })
+
+  const applications = await prisma.jobApplication.findMany({
+    where: {
+      applicantId: currentUserId,
+    },
+    include: {
+      applicant: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          headline: true,
+          avatarUrl: true,
+          currentRole: true,
+          currentCompany: true,
+        },
+      },
+      selectedProof: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          link: true,
+          profession: true,
+          proofType: true,
+          outcomeSummary: true,
+          score: true,
+          feedback: true,
+          tags: true,
+          txHash: true,
+          verificationStatus: true,
+          verificationConfidence: true,
+          verificationSignals: true,
+          verifiedAt: true,
+          createdAt: true,
+        },
+      },
+    },
+    orderBy: { updatedAt: 'desc' },
   })
 
   const response: CandidateJobsResponse = {
@@ -34,8 +84,10 @@ export async function GET(request: Request) {
         ...toJobPostDto(job),
         hasApplied: Boolean(application),
         applicationStatus: application?.status ?? null,
+        isSaved: job.savedByUsers.length > 0,
       }
     }),
+    applications: applications.map(toJobApplicationDto),
   }
 
   return NextResponse.json(response)

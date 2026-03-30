@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { BriefcaseBusiness, Send } from 'lucide-react'
+import { Bookmark, BriefcaseBusiness, Send } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -22,6 +22,7 @@ export default function JobsBoardPage() {
   const [selectedProofId, setSelectedProofId] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isApplying, setIsApplying] = useState(false)
+  const [savingJobId, setSavingJobId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const loadJobs = useCallback(async () => {
@@ -35,6 +36,7 @@ export default function JobsBoardPage() {
       const payload = (await response.json()) as CandidateJobsResponse
       setJobs(payload.jobs)
       setSelectedJobId((current) => current ?? payload.jobs[0]?.id ?? null)
+      setSelectedProofId((current) => current)
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Something went wrong')
     } finally {
@@ -83,6 +85,27 @@ export default function JobsBoardPage() {
   }
 
   const selectableProofs = useMemo(() => proofs.slice(0, 16), [proofs])
+  const savedJobs = useMemo(() => jobs.filter((job) => job.isSaved), [jobs])
+  const myApplications = useMemo(() => jobs.filter((job) => job.hasApplied), [jobs])
+
+  const toggleSavedJob = async (job: CandidateJobPost) => {
+    setSavingJobId(job.id)
+    setError(null)
+    try {
+      const response = await fetch(`/api/jobs/${encodeURIComponent(job.id)}/save`, {
+        method: job.isSaved ? 'DELETE' : 'POST',
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to update saved jobs')
+      }
+      await loadJobs()
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to update saved jobs')
+    } finally {
+      setSavingJobId(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,6 +139,14 @@ export default function JobsBoardPage() {
           <div className="mt-6 grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
             <Card className="rounded-[2rem] border border-border/60 p-6">
               <h2 className="text-lg font-semibold text-foreground">Available jobs</h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                  {savedJobs.length} saved
+                </Badge>
+                <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                  {myApplications.length} applied
+                </Badge>
+              </div>
               {isLoading ? (
                 <div className="mt-4 space-y-3">
                   {Array.from({ length: 4 }).map((_, index) => (
@@ -147,6 +178,11 @@ export default function JobsBoardPage() {
                       {job.hasApplied ? (
                         <Badge variant="secondary" className="mt-2 border border-border/60 bg-background/70 text-foreground">
                           Applied • {job.applicationStatus}
+                        </Badge>
+                      ) : null}
+                      {job.isSaved ? (
+                        <Badge variant="outline" className="mt-2 ml-2 border-border/60 bg-background/60 text-muted-foreground">
+                          Saved
                         </Badge>
                       ) : null}
                     </button>
@@ -182,11 +218,34 @@ export default function JobsBoardPage() {
                     <p className="mt-4 text-sm leading-7 text-muted-foreground">{selectedJob.description}</p>
                     {selectedJob.company ? (
                       <div className="mt-4">
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/company/${encodeURIComponent(selectedJob.company.slug)}`}>View company page</Link>
+                        <div className="flex flex-wrap gap-2">
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/company/${encodeURIComponent(selectedJob.company.slug)}`}>View company page</Link>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleSavedJob(selectedJob)}
+                            disabled={savingJobId === selectedJob.id}
+                          >
+                            <Bookmark className="size-4" />
+                            {selectedJob.isSaved ? 'Saved' : 'Save job'}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleSavedJob(selectedJob)}
+                          disabled={savingJobId === selectedJob.id}
+                        >
+                          <Bookmark className="size-4" />
+                          {selectedJob.isSaved ? 'Saved' : 'Save job'}
                         </Button>
                       </div>
-                    ) : null}
+                    )}
                   </div>
 
                   <div className="grid gap-6 md:grid-cols-2">
@@ -254,6 +313,42 @@ export default function JobsBoardPage() {
                       </div>
                     </div>
                   </div>
+
+                  {myApplications.length > 0 ? (
+                    <div className="rounded-[1.5rem] border border-border/60 p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-foreground">My job activity</h3>
+                          <p className="mt-1 text-sm text-muted-foreground">Track saved roles and submitted applications in one place.</p>
+                        </div>
+                      </div>
+                      <div className="mt-5 grid gap-3">
+                        {jobs
+                          .filter((job) => job.isSaved || job.hasApplied)
+                          .slice(0, 6)
+                          .map((job) => (
+                            <div key={`activity-${job.id}`} className="rounded-2xl border border-border/60 bg-background/60 p-4">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-semibold text-foreground">{job.title}</p>
+                                {job.isSaved ? (
+                                  <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                                    Saved
+                                  </Badge>
+                                ) : null}
+                                {job.hasApplied ? (
+                                  <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                                    Applied • {job.applicationStatus}
+                                  </Badge>
+                                ) : null}
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {job.company?.name ?? 'Independent recruiter'} • {PROFESSION_LABELS[job.profession as ProofProfession] ?? job.profession}
+                              </p>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </Card>

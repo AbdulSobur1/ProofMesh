@@ -607,10 +607,12 @@ export type JobMatchResponse = {
 export type CandidateJobPost = JobPost & {
   hasApplied: boolean
   applicationStatus: JobApplicationStatus | null
+  isSaved?: boolean
 }
 
 export type CandidateJobsResponse = {
   jobs: CandidateJobPost[]
+  applications?: JobApplication[]
 }
 
 export type JobApplicationsResponse = {
