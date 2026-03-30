@@ -1,9 +1,27 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { calculateReputation } from '@/lib/services/reputation'
-import { Proof } from '@/lib/types'
+import { PeerVerification, Proof } from '@/lib/types'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
+
+const toEndorsement = (endorsement: {
+  id: string
+  verifierName: string
+  verifierRole: string | null
+  verifierCompany: string | null
+  relationship: string
+  message: string
+  createdAt: Date
+}): PeerVerification => ({
+  id: endorsement.id,
+  verifierName: endorsement.verifierName,
+  verifierRole: endorsement.verifierRole,
+  verifierCompany: endorsement.verifierCompany,
+  relationship: endorsement.relationship as PeerVerification['relationship'],
+  message: endorsement.message,
+  createdAt: endorsement.createdAt.toISOString(),
+})
 
 const toProof = (proof: {
   id: string
@@ -22,6 +40,15 @@ const toProof = (proof: {
   verificationSignals: string
   verifiedAt: Date | null
   createdAt: Date
+  endorsements?: Array<{
+    id: string
+    verifierName: string
+    verifierRole: string | null
+    verifierCompany: string | null
+    relationship: string
+    message: string
+    createdAt: Date
+  }>
 }): Proof => ({
   id: proof.id,
   title: proof.title,
@@ -38,6 +65,8 @@ const toProof = (proof: {
   verificationConfidence: proof.verificationConfidence,
   verificationSignals: parseVerificationSignals(proof.verificationSignals),
   verifiedAt: proof.verifiedAt?.toISOString() ?? null,
+  endorsements: (proof.endorsements ?? []).map(toEndorsement),
+  endorsementCount: proof.endorsements?.length ?? 0,
   createdAt: proof.createdAt.toISOString(),
 })
 
@@ -61,6 +90,7 @@ export async function GET(
         tagFrequency: [],
         verifiedProofs: 0,
         averageConfidence: 0,
+        endorsementCount: 0,
       },
     })
   }
@@ -68,6 +98,11 @@ export async function GET(
   const proofs = await prisma.proof.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: 'desc' },
+    include: {
+      endorsements: {
+        orderBy: { createdAt: 'desc' },
+      },
+    },
   })
 
   const proofDtos = proofs.map(toProof)

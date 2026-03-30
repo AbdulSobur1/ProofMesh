@@ -63,6 +63,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     tagFrequency: [],
     verifiedProofs: 0,
     averageConfidence: 0,
+    endorsementCount: 0,
   }
 
   const proofs = useMemo(() => data?.proofs ?? [], [data])
@@ -136,6 +137,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 totalProofs={reputation.totalProofs}
                 verifiedProofs={reputation.verifiedProofs}
                 averageConfidence={reputation.averageConfidence}
+                endorsementCount={reputation.endorsementCount}
               />
             )}
           </div>
@@ -232,3 +234,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     </div>
   )
 }
+
+
+
+

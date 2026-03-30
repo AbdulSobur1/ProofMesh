@@ -1,5 +1,5 @@
 import { Proof, Reputation } from '@/lib/types'
-import { averageConfidence, countVerifiedProofs } from '@/lib/services/verification'
+import { averageConfidence, countEndorsements, countVerifiedProofs } from '@/lib/services/verification'
 
 export const calculateReputation = (proofs: Proof[]): Reputation => {
   const totalProofs = proofs.length
@@ -23,5 +23,6 @@ export const calculateReputation = (proofs: Proof[]): Reputation => {
     tagFrequency,
     verifiedProofs: countVerifiedProofs(proofs),
     averageConfidence: averageConfidence(proofs),
+    endorsementCount: countEndorsements(proofs),
   }
 }

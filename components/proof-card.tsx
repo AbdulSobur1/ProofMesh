@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Calendar, ExternalLink, Hash, ShieldCheck, Sparkles } from 'lucide-react'
+import { Calendar, ExternalLink, Hash, MessageSquareQuote, ShieldCheck, Sparkles } from 'lucide-react'
 import { Proof } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -120,6 +120,12 @@ export function ProofCard({ proof }: ProofCardProps) {
               <Hash className="size-3.5" />
               <span className="font-mono tracking-tight">{proof.txHash.slice(0, 12)}…</span>
             </div>
+            {proof.endorsementCount > 0 ? (
+              <div className="flex items-center gap-2">
+                <MessageSquareQuote className="size-3.5" />
+                <span>{proof.endorsementCount} verification note{proof.endorsementCount === 1 ? '' : 's'}</span>
+              </div>
+            ) : null}
             {proof.link ? (
               <Link
                 href={proof.link}

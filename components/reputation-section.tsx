@@ -6,9 +6,16 @@ interface ReputationSectionProps {
   totalProofs: number
   verifiedProofs: number
   averageConfidence: number
+  endorsementCount: number
 }
 
-export function ReputationSection({ averageScore, totalProofs, verifiedProofs, averageConfidence }: ReputationSectionProps) {
+export function ReputationSection({
+  averageScore,
+  totalProofs,
+  verifiedProofs,
+  averageConfidence,
+  endorsementCount,
+}: ReputationSectionProps) {
   const scorePercentage = Math.min(Math.max((averageScore / 10) * 100, 0), 100)
   const confidencePercentage = Math.min(Math.max(averageConfidence, 0), 100)
 
@@ -44,7 +51,7 @@ export function ReputationSection({ averageScore, totalProofs, verifiedProofs, a
               <div className="text-4xl font-semibold tracking-tight text-foreground">{totalProofs}</div>
               <span className="text-sm text-muted-foreground">submitted</span>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">Artifacts and case studies on record.</p>
+            <p className="mt-4 text-xs text-muted-foreground">{endorsementCount} external verification note{endorsementCount === 1 ? '' : 's'} attached.</p>
           </div>
           <div className="flex size-12 items-center justify-center rounded-2xl border border-border/60 bg-background/70">
             <FileText className="size-5 text-primary" />

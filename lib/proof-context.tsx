@@ -34,6 +34,7 @@ const emptyReputation: Reputation = {
   tagFrequency: [],
   verifiedProofs: 0,
   averageConfidence: 0,
+  endorsementCount: 0,
 }
 
 export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -152,3 +153,4 @@ export const useProofs = () => {
   }
   return context
 }
+

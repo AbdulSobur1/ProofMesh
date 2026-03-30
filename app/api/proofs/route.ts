@@ -7,6 +7,7 @@ import { getCurrentToken } from '@/lib/auth-options'
 import { parseTags, serializeTags } from '@/lib/services/tags'
 import { PROOF_PROFESSIONS, PROOF_TYPES } from '@/lib/proof-taxonomy'
 import { evaluateVerification, parseVerificationSignals, serializeVerificationSignals } from '@/lib/services/verification'
+import { PeerVerification, Proof } from '@/lib/types'
 
 const createSchema = z.object({
   title: z.string().min(2),
@@ -15,6 +16,24 @@ const createSchema = z.object({
   profession: z.enum(PROOF_PROFESSIONS),
   proofType: z.enum(PROOF_TYPES),
   outcomeSummary: z.string().max(240).optional().or(z.literal('')),
+})
+
+const toEndorsementDto = (endorsement: {
+  id: string
+  verifierName: string
+  verifierRole: string | null
+  verifierCompany: string | null
+  relationship: string
+  message: string
+  createdAt: Date
+}): PeerVerification => ({
+  id: endorsement.id,
+  verifierName: endorsement.verifierName,
+  verifierRole: endorsement.verifierRole,
+  verifierCompany: endorsement.verifierCompany,
+  relationship: endorsement.relationship as PeerVerification['relationship'],
+  message: endorsement.message,
+  createdAt: endorsement.createdAt.toISOString(),
 })
 
 const toProofDto = (proof: {
@@ -34,7 +53,16 @@ const toProofDto = (proof: {
   verificationSignals: string
   verifiedAt: Date | null
   createdAt: Date
-}) => ({
+  endorsements?: Array<{
+    id: string
+    verifierName: string
+    verifierRole: string | null
+    verifierCompany: string | null
+    relationship: string
+    message: string
+    createdAt: Date
+  }>
+}): Proof => ({
   id: proof.id,
   title: proof.title,
   description: proof.description,
@@ -50,6 +78,8 @@ const toProofDto = (proof: {
   verificationConfidence: proof.verificationConfidence,
   verificationSignals: parseVerificationSignals(proof.verificationSignals),
   verifiedAt: proof.verifiedAt?.toISOString() ?? null,
+  endorsements: (proof.endorsements ?? []).map(toEndorsementDto),
+  endorsementCount: proof.endorsements?.length ?? 0,
   createdAt: proof.createdAt.toISOString(),
 })
 
@@ -69,6 +99,11 @@ export async function GET(request: Request) {
   const proofs = await prisma.proof.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: 'desc' },
+    include: {
+      endorsements: {
+        orderBy: { createdAt: 'desc' },
+      },
+    },
   })
 
   return NextResponse.json({
@@ -108,6 +143,7 @@ export async function POST(request: Request) {
       link: input.link || undefined,
       outcomeSummary: input.outcomeSummary || undefined,
       tags: evaluation.tags,
+      endorsements: [],
     })
 
     const proof = await prisma.proof.create({
@@ -127,6 +163,11 @@ export async function POST(request: Request) {
         verificationSignals: serializeVerificationSignals(verification.signals),
         verifiedAt: verification.verifiedAt,
         userId: user.id,
+      },
+      include: {
+        endorsements: {
+          orderBy: { createdAt: 'desc' },
+        },
       },
     })
 

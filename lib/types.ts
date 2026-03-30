@@ -8,12 +8,25 @@ export type VerificationSignal = {
   strength: 'low' | 'medium' | 'high'
 }
 
+export type PeerVerificationRelationship = 'peer' | 'client' | 'manager' | 'collaborator'
+
+export type PeerVerification = {
+  id: string
+  verifierName: string
+  verifierRole: string | null
+  verifierCompany: string | null
+  relationship: PeerVerificationRelationship
+  message: string
+  createdAt: string
+}
+
 export type Reputation = {
   averageScore: number
   totalProofs: number
   tagFrequency: TagFrequency[]
   verifiedProofs: number
   averageConfidence: number
+  endorsementCount: number
 }
 
 export type Proof = {
@@ -32,6 +45,8 @@ export type Proof = {
   verificationConfidence: number
   verificationSignals: VerificationSignal[]
   verifiedAt: string | null
+  endorsements: PeerVerification[]
+  endorsementCount: number
   createdAt: string
   userId?: string
 }
@@ -67,3 +82,22 @@ export type MeResponse = {
 }
 
 export type ProofSortMode = 'newest' | 'oldest' | 'highest' | 'lowest'
+export type DiscoverySortMode = 'trust' | 'score' | 'proofs' | 'endorsements'
+
+export type DiscoveryCandidate = {
+  id: string
+  username: string
+  createdAt: string
+  primaryProfession: string | null
+  reputation: Reputation
+  topTags: string[]
+  strongestProof: {
+    id: string
+    title: string
+    score: number
+  } | null
+}
+
+export type DiscoveryResponse = {
+  candidates: DiscoveryCandidate[]
+}

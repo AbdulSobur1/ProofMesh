@@ -1,4 +1,4 @@
-import { type Proof } from '@/lib/types'
+import { type PeerVerification, type Proof } from '@/lib/types'
 
 export type VerificationStatus = 'verified' | 'strong' | 'needs_review'
 export type VerificationStrength = 'low' | 'medium' | 'high'
@@ -12,6 +12,13 @@ const signal = (label: string, strength: VerificationStrength): VerificationSign
   label,
   strength,
 })
+
+const relationshipBoosts: Record<string, number> = {
+  peer: 8,
+  collaborator: 10,
+  manager: 12,
+  client: 14,
+}
 
 export const serializeVerificationSignals = (signals: VerificationSignal[]) => JSON.stringify(signals)
 
@@ -55,6 +62,7 @@ export const evaluateVerification = (input: {
   link?: string | null
   outcomeSummary?: string | null
   tags: string[]
+  endorsements?: Array<Pick<PeerVerification, 'relationship' | 'message' | 'verifierCompany'>>
 }): {
   status: VerificationStatus
   confidence: number
@@ -88,6 +96,36 @@ export const evaluateVerification = (input: {
   } else if (input.score >= 7) {
     confidence += 10
     signals.push(signal('Solid evaluation score', 'medium'))
+  }
+
+  const endorsements = input.endorsements ?? []
+  const relationshipCounts = new Map<string, number>()
+
+  endorsements.forEach((endorsement) => {
+    const normalizedRelationship = endorsement.relationship.toLowerCase()
+    relationshipCounts.set(normalizedRelationship, (relationshipCounts.get(normalizedRelationship) ?? 0) + 1)
+    confidence += relationshipBoosts[normalizedRelationship] ?? 6
+
+    if ((endorsement.message ?? '').trim().length >= 50) {
+      confidence += 4
+    }
+  })
+
+  relationshipCounts.forEach((count, relationship) => {
+    const label = relationship === 'client'
+      ? 'Client-endorsed'
+      : relationship === 'manager'
+        ? 'Manager-endorsed'
+        : relationship === 'collaborator'
+          ? 'Collaborator-endorsed'
+          : 'Peer-endorsed'
+
+    signals.push(signal(count > 1 ? `${label} x${count}` : label, count > 1 ? 'high' : 'medium'))
+  })
+
+  if (endorsements.length >= 3) {
+    confidence += 8
+    signals.push(signal('Multiple independent endorsements', 'high'))
   }
 
   const boundedConfidence = Math.max(20, Math.min(98, confidence))
@@ -126,3 +164,6 @@ export const averageConfidence = (proofs: Proof[]) => {
   const total = proofs.reduce((sum, proof) => sum + proof.verificationConfidence, 0)
   return Math.round((total / proofs.length) * 10) / 10
 }
+
+export const countEndorsements = (proofs: Proof[]) =>
+  proofs.reduce((sum, proof) => sum + proof.endorsementCount, 0)

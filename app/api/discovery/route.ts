@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { calculateReputation } from '@/lib/services/reputation'
-import { PeerVerification, Proof } from '@/lib/types'
+import { getPrimaryProfession, getStrongestProof } from '@/lib/services/discovery'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
+import { DiscoveryCandidate, DiscoveryResponse, PeerVerification, Proof } from '@/lib/types'
 
 const toEndorsement = (endorsement: {
   id: string
@@ -33,14 +34,14 @@ const toProof = (proof: {
   outcomeSummary: string | null
   score: number
   feedback: string | null
-  tags: unknown
+  tags: string
   txHash: string
   verificationStatus: string
   verificationConfidence: number
   verificationSignals: string
   verifiedAt: Date | null
   createdAt: Date
-  endorsements?: Array<{
+  endorsements: Array<{
     id: string
     verifierName: string
     verifierRole: string | null
@@ -59,32 +60,49 @@ const toProof = (proof: {
   outcomeSummary: proof.outcomeSummary,
   score: proof.score,
   feedback: proof.feedback,
-  tags: parseTags(typeof proof.tags === 'string' ? proof.tags : null),
+  tags: parseTags(proof.tags),
   txHash: proof.txHash,
   verificationStatus: proof.verificationStatus,
   verificationConfidence: proof.verificationConfidence,
   verificationSignals: parseVerificationSignals(proof.verificationSignals),
   verifiedAt: proof.verifiedAt?.toISOString() ?? null,
-  endorsements: (proof.endorsements ?? []).map(toEndorsement),
-  endorsementCount: proof.endorsements?.length ?? 0,
+  endorsements: proof.endorsements.map(toEndorsement),
+  endorsementCount: proof.endorsements.length,
   createdAt: proof.createdAt.toISOString(),
 })
 
-export async function GET(
-  _request: Request,
-  { params }: { params: { userId: string } }
-) {
-  const proofs = await prisma.proof.findMany({
-    where: { userId: params.userId },
+export async function GET() {
+  const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
-      endorsements: {
+      proofs: {
         orderBy: { createdAt: 'desc' },
+        include: {
+          endorsements: {
+            orderBy: { createdAt: 'desc' },
+          },
+        },
       },
     },
   })
 
-  const reputation = calculateReputation(proofs.map(toProof))
+  const candidates: DiscoveryCandidate[] = users
+    .map((user) => {
+      const proofs = user.proofs.map(toProof)
+      const reputation = calculateReputation(proofs)
 
-  return NextResponse.json(reputation)
+      return {
+        id: user.id,
+        username: user.username,
+        createdAt: user.createdAt.toISOString(),
+        primaryProfession: getPrimaryProfession(proofs),
+        reputation,
+        topTags: reputation.tagFrequency.slice(0, 4).map((item) => item.tag),
+        strongestProof: getStrongestProof(proofs),
+      }
+    })
+    .filter((candidate) => candidate.reputation.totalProofs > 0)
+
+  const response: DiscoveryResponse = { candidates }
+  return NextResponse.json(response)
 }

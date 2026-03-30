@@ -17,27 +17,44 @@ model User {
 }
 
 model Proof {
-  id                     String   @id @default(cuid())
+  id                     String             @id @default(cuid())
   title                  String
   description            String
   link                   String?
-  profession             String   @default("software_engineering")
-  proofType              String   @default("project")
+  profession             String             @default("software_engineering")
+  proofType              String             @default("project")
   outcomeSummary         String?
   score                  Int
   feedback               String?
   tags                   String
   txHash                 String
-  verificationStatus     String   @default("needs_review")
-  verificationConfidence Int      @default(50)
-  verificationSignals    String   @default("[]")
+  verificationStatus     String             @default("needs_review")
+  verificationConfidence Int                @default(50)
+  verificationSignals    String             @default("[]")
   verifiedAt             DateTime?
-  createdAt              DateTime @default(now())
+  createdAt              DateTime           @default(now())
   userId                 String
-  user                   User     @relation(fields: [userId], references: [id])
+  user                   User               @relation(fields: [userId], references: [id])
+  endorsements           ProofEndorsement[]
 
   @@index([userId])
   @@index([createdAt])
   @@index([profession])
   @@index([verificationStatus])
+}
+
+model ProofEndorsement {
+  id              String   @id @default(cuid())
+  verifierName    String
+  verifierRole    String?
+  verifierCompany String?
+  relationship    String
+  message         String
+  createdAt       DateTime @default(now())
+  proofId         String
+  proof           Proof     @relation(fields: [proofId], references: [id], onDelete: Cascade)
+
+  @@index([proofId])
+  @@index([relationship])
+  @@index([createdAt])
 }

@@ -63,6 +63,7 @@ export default function DashboardPage() {
                 totalProofs={reputation.totalProofs}
                 verifiedProofs={reputation.verifiedProofs}
                 averageConfidence={reputation.averageConfidence}
+                endorsementCount={reputation.endorsementCount}
               />
             )}
           </div>
@@ -146,3 +147,6 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+
+

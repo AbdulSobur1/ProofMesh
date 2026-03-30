@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, CheckSquare, Plus, User } from 'lucide-react'
+import { BarChart3, CheckSquare, Compass, Plus, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useProofs } from '@/lib/proof-context'
 
@@ -18,6 +18,11 @@ export function Sidebar() {
       icon: BarChart3,
     },
     {
+      href: '/discover',
+      label: 'Discover Talent',
+      icon: Compass,
+    },
+    {
       href: '/submit',
       label: 'Submit Proof',
       icon: Plus,
@@ -31,7 +36,7 @@ export function Sidebar() {
 
   return (
     <aside className="fixed left-0 top-0 hidden h-screen w-72 flex-col border-r border-border/60 bg-sidebar/90 backdrop-blur md:flex">
-      <div className="p-6 border-b border-border/60">
+      <div className="border-b border-border/60 p-6">
         <Link href="/dashboard" className="flex items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
             <CheckSquare className="size-5" />
@@ -69,7 +74,7 @@ export function Sidebar() {
       <div className="p-4">
         <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Status</p>
-          <p className="mt-2 text-sm text-foreground/80">Separated marketing and product flows are now live.</p>
+          <p className="mt-2 text-sm text-foreground/80">Recruiter discovery is now live alongside proof and trust signals.</p>
         </div>
       </div>
     </aside>
