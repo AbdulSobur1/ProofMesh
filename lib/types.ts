@@ -282,6 +282,7 @@ export type MessageRecord = {
   body: string
   createdAt: string
   senderId: string
+  proof: Proof | null
 }
 
 export type ConversationRecord = {

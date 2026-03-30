@@ -7,6 +7,7 @@ import { createNotification } from '@/lib/services/notifications'
 
 const sendMessageSchema = z.object({
   body: z.string().trim().min(1).max(2000),
+  proofId: z.string().trim().optional(),
 })
 
 async function getCurrentUserId(request: Request) {
@@ -47,6 +48,9 @@ export async function GET(
       },
       messages: {
         orderBy: { createdAt: 'asc' },
+        include: {
+          proof: true,
+        },
       },
     },
   })
@@ -104,6 +108,16 @@ export async function POST(
       },
     })
 
+    if (input.proofId) {
+      const proof = await prisma.proof.findUnique({
+        where: { id: input.proofId },
+      })
+
+      if (!proof || proof.userId !== currentUserId) {
+        return NextResponse.json({ error: 'You can only attach your own proof' }, { status: 403 })
+      }
+    }
+
     const participantIds = await prisma.conversationParticipant.findMany({
       where: {
         conversationId: params.conversationId,
@@ -119,6 +133,10 @@ export async function POST(
           body: input.body,
           senderId: currentUserId,
           conversationId: params.conversationId,
+          proofId: input.proofId || null,
+        },
+        include: {
+          proof: true,
         },
       })
 

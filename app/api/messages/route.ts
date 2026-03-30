@@ -8,6 +8,7 @@ import { createNotification } from '@/lib/services/notifications'
 const createConversationSchema = z.object({
   targetUsername: z.string().trim().min(1),
   body: z.string().trim().min(1).max(2000),
+  proofId: z.string().trim().optional(),
 })
 
 async function getCurrentUserId(request: Request) {
@@ -37,6 +38,9 @@ export async function GET(request: Request) {
           messages: {
             orderBy: { createdAt: 'desc' },
             take: 20,
+            include: {
+              proof: true,
+            },
           },
         },
       },
@@ -92,6 +96,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'You can only message accepted connections' }, { status: 403 })
     }
 
+    if (input.proofId) {
+      const proof = await prisma.proof.findUnique({
+        where: { id: input.proofId },
+      })
+
+      if (!proof || proof.userId !== currentUserId) {
+        return NextResponse.json({ error: 'You can only attach your own proof' }, { status: 403 })
+      }
+    }
+
     const existingMemberships = await prisma.conversationParticipant.findMany({
       where: {
         userId: {
@@ -128,6 +142,7 @@ export async function POST(request: Request) {
               create: {
                 body: input.body,
                 senderId: currentUserId,
+                proofId: input.proofId || null,
               },
             },
             participants: {
@@ -171,6 +186,7 @@ export async function POST(request: Request) {
               create: {
                 body: input.body,
                 senderId: currentUserId,
+                proofId: input.proofId || null,
               },
             },
           },

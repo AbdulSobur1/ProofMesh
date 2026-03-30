@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Mail, Send } from 'lucide-react'
+import { Mail, Paperclip, Send } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -26,12 +26,14 @@ const formatTime = (value: string | null) =>
 function MessagesPageContent() {
   const searchParams = useSearchParams()
   const targetUsername = searchParams.get('user') ?? ''
-  const { currentUser } = useProofs()
+  const { currentUser, proofs } = useProofs()
   const [conversations, setConversations] = useState<ConversationRecord[]>([])
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
   const [thread, setThread] = useState<ConversationThreadResponse | null>(null)
   const [draft, setDraft] = useState('')
   const [newConversationMessage, setNewConversationMessage] = useState('')
+  const [attachedProofId, setAttachedProofId] = useState('')
+  const [newConversationProofId, setNewConversationProofId] = useState('')
   const [isLoadingInbox, setIsLoadingInbox] = useState(true)
   const [isLoadingThread, setIsLoadingThread] = useState(false)
   const [isSending, setIsSending] = useState(false)
@@ -105,6 +107,7 @@ function MessagesPageContent() {
   )
 
   const selectedOtherUser = selectedConversation?.participants.find((participant) => participant.id !== currentUser?.id) ?? null
+  const selectableProofs = useMemo(() => proofs.slice(0, 12), [proofs])
 
   const sendMessage = async () => {
     const trimmedDraft = draft.trim()
@@ -118,7 +121,10 @@ function MessagesPageContent() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ body: trimmedDraft }),
+        body: JSON.stringify({
+          body: trimmedDraft,
+          proofId: attachedProofId || undefined,
+        }),
       })
       const payload = await response.json().catch(() => null)
       if (!response.ok) {
@@ -126,6 +132,7 @@ function MessagesPageContent() {
       }
 
       setDraft('')
+      setAttachedProofId('')
       await loadInbox()
       const threadResponse = await fetch(`/api/messages/${encodeURIComponent(selectedConversationId)}`, {
         cache: 'no-store',
@@ -155,6 +162,7 @@ function MessagesPageContent() {
         body: JSON.stringify({
           targetUsername,
           body: trimmedMessage,
+          proofId: newConversationProofId || undefined,
         }),
       })
       const payload = await response.json().catch(() => null)
@@ -163,6 +171,7 @@ function MessagesPageContent() {
       }
 
       setNewConversationMessage('')
+      setNewConversationProofId('')
       await loadInbox()
       setSelectedConversationId(payload.conversation.id)
     } catch (startError) {
@@ -209,6 +218,18 @@ function MessagesPageContent() {
               </p>
               <div className="mt-4 flex gap-3">
                 <Input value={newConversationMessage} onChange={(event) => setNewConversationMessage(event.target.value)} placeholder="Write your first message..." />
+                <select
+                  value={newConversationProofId}
+                  onChange={(event) => setNewConversationProofId(event.target.value)}
+                  className="h-11 min-w-[220px] rounded-xl border border-border/60 bg-background/70 px-3 text-sm text-foreground outline-none"
+                >
+                  <option value="">Attach proof (optional)</option>
+                  {selectableProofs.map((proof) => (
+                    <option key={proof.id} value={proof.id}>
+                      {proof.title}
+                    </option>
+                  ))}
+                </select>
                 <Button onClick={startConversation} disabled={isSending || !newConversationMessage.trim()}>
                   <Send className="size-4" />
                   Send
@@ -321,6 +342,24 @@ function MessagesPageContent() {
                               }`}
                             >
                               <p>{message.body}</p>
+                              {message.proof ? (
+                                <div className={`mt-3 rounded-xl border px-3 py-3 ${isOwn ? 'border-primary-foreground/20 bg-primary-foreground/10' : 'border-border/60 bg-background/60'}`}>
+                                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em]">
+                                    <Paperclip className="size-3.5" />
+                                    Attached proof
+                                  </div>
+                                  <p className="mt-2 text-sm font-semibold">{message.proof.title}</p>
+                                  <p className={`mt-1 text-xs ${isOwn ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                                    {message.proof.score}/10 score • {message.proof.verificationConfidence}% trust
+                                  </p>
+                                  <Link
+                                    href={`/proof/${message.proof.id}`}
+                                    className={`mt-2 inline-flex text-xs font-medium ${isOwn ? 'text-primary-foreground' : 'text-primary hover:underline'}`}
+                                  >
+                                    Open proof
+                                  </Link>
+                                </div>
+                              ) : null}
                               <p className={`mt-2 text-xs ${isOwn ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                                 {formatTime(message.createdAt)}
                               </p>
@@ -332,22 +371,36 @@ function MessagesPageContent() {
                   </div>
 
                   <div className="border-t border-border/60 pt-4">
-                    <div className="flex gap-3">
-                      <Input
-                        value={draft}
-                        onChange={(event) => setDraft(event.target.value)}
-                        placeholder="Write a message..."
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' && !event.shiftKey) {
-                            event.preventDefault()
-                            void sendMessage()
-                          }
-                        }}
-                      />
-                      <Button onClick={sendMessage} disabled={isSending || !draft.trim()}>
-                        <Send className="size-4" />
-                        Send
-                      </Button>
+                    <div className="space-y-3">
+                      <select
+                        value={attachedProofId}
+                        onChange={(event) => setAttachedProofId(event.target.value)}
+                        className="h-11 w-full rounded-xl border border-border/60 bg-background/70 px-3 text-sm text-foreground outline-none"
+                      >
+                        <option value="">Attach proof (optional)</option>
+                        {selectableProofs.map((proof) => (
+                          <option key={proof.id} value={proof.id}>
+                            {proof.title}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex gap-3">
+                        <Input
+                          value={draft}
+                          onChange={(event) => setDraft(event.target.value)}
+                          placeholder="Write a message..."
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' && !event.shiftKey) {
+                              event.preventDefault()
+                              void sendMessage()
+                            }
+                          }}
+                        />
+                        <Button onClick={sendMessage} disabled={isSending || !draft.trim()}>
+                          <Send className="size-4" />
+                          Send
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>

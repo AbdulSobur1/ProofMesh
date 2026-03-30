@@ -136,14 +136,17 @@ model ConversationParticipant {
 model Message {
   id              String        @id @default(cuid())
   body            String
+  proofId         String?
   createdAt       DateTime      @default(now())
   conversationId  String
   senderId        String
   conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender          User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  proof           Proof?        @relation(fields: [proofId], references: [id], onDelete: SetNull)
 
   @@index([conversationId, createdAt])
   @@index([senderId, createdAt])
+  @@index([proofId])
 }
 
 model Notification {
@@ -378,6 +381,7 @@ model Proof {
   endorsements           ProofEndorsement[]
   endorsementRequests    ProofEndorsementRequest[]
   posts                  Post[]
+  messages               Message[]
   jobApplications        JobApplication[]
 
   @@index([userId])
