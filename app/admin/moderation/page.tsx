@@ -148,6 +148,16 @@ export default function ModerationPage() {
                             <div className="mt-4 rounded-2xl border border-border/60 bg-background/50 p-4">
                               <p className="text-sm font-semibold text-foreground">{item.proof.title}</p>
                               <p className="mt-1 text-sm text-muted-foreground line-clamp-3">{item.proof.description}</p>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                                  Risk {item.proof.riskScore ?? 0}/100
+                                </Badge>
+                                {(item.proof.riskFlags ?? []).slice(0, 3).map((flag) => (
+                                  <Badge key={flag} variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                                    {flag}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
                           ) : null}
                           {item.post ? (

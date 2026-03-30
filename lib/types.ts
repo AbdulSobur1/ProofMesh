@@ -44,6 +44,8 @@ export type Proof = {
   verificationStatus: string
   verificationConfidence: number
   verificationSignals: VerificationSignal[]
+  riskScore?: number
+  riskFlags?: string[]
   moderationStatus?: 'active' | 'under_review' | 'removed'
   verifiedAt: string | null
   endorsements: PeerVerification[]

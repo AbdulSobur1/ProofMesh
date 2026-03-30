@@ -38,6 +38,8 @@ const postInclude = {
       verificationStatus: true,
       verificationConfidence: true,
       verificationSignals: true,
+      riskScore: true,
+      riskFlags: true,
       moderationStatus: true,
       verifiedAt: true,
       createdAt: true,

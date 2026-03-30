@@ -7,6 +7,7 @@ import { getCurrentToken } from '@/lib/auth-options'
 import { parseTags, serializeTags } from '@/lib/services/tags'
 import { PROOF_PROFESSIONS, PROOF_TYPES } from '@/lib/proof-taxonomy'
 import { evaluateVerification, parseVerificationSignals, serializeVerificationSignals } from '@/lib/services/verification'
+import { assessProofRisk } from '@/lib/services/risk'
 import { PeerVerification, Proof } from '@/lib/types'
 
 const createSchema = z.object({
@@ -51,6 +52,8 @@ const toProofDto = (proof: {
   verificationStatus: string
   verificationConfidence: number
   verificationSignals: string
+  riskScore: number
+  riskFlags: string
   verifiedAt: Date | null
   createdAt: Date
   endorsements?: Array<{
@@ -77,6 +80,8 @@ const toProofDto = (proof: {
   verificationStatus: proof.verificationStatus,
   verificationConfidence: proof.verificationConfidence,
   verificationSignals: parseVerificationSignals(proof.verificationSignals),
+  riskScore: proof.riskScore,
+  riskFlags: parseTags(proof.riskFlags),
   verifiedAt: proof.verifiedAt?.toISOString() ?? null,
   endorsements: (proof.endorsements ?? []).map(toEndorsementDto),
   endorsementCount: proof.endorsements?.length ?? 0,
@@ -146,6 +151,20 @@ export async function POST(request: Request) {
       endorsements: [],
     })
 
+    const existingProofCount = await prisma.proof.count({
+      where: { userId: user.id },
+    })
+
+    const risk = assessProofRisk({
+      title: input.title,
+      description: input.description,
+      link: input.link || undefined,
+      outcomeSummary: input.outcomeSummary || undefined,
+      score: evaluation.score,
+      tags: evaluation.tags,
+      existingProofCount,
+    })
+
     const proof = await prisma.proof.create({
       data: {
         title: input.title,
@@ -161,6 +180,9 @@ export async function POST(request: Request) {
         verificationStatus: verification.status,
         verificationConfidence: verification.confidence,
         verificationSignals: serializeVerificationSignals(verification.signals),
+        riskScore: risk.score,
+        riskFlags: serializeTags(risk.flags),
+        moderationStatus: risk.moderationStatus,
         verifiedAt: verification.verifiedAt,
         userId: user.id,
       },
@@ -170,6 +192,18 @@ export async function POST(request: Request) {
         },
       },
     })
+
+    if (risk.moderationStatus === 'under_review') {
+      await prisma.report.create({
+        data: {
+          targetType: 'proof',
+          targetId: proof.id,
+          reason: 'fraud',
+          details: `Automatically flagged during submission review. Risk score ${risk.score}/100. ${risk.flags.join(' | ')}`,
+          reporterId: user.id,
+        },
+      })
+    }
 
     return NextResponse.json({
       user: {

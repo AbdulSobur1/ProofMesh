@@ -343,6 +343,8 @@ model Proof {
   verificationStatus     String             @default("needs_review")
   verificationConfidence Int                @default(50)
   verificationSignals    String             @default("[]")
+  riskScore              Int                @default(0)
+  riskFlags              String             @default("[]")
   moderationStatus       String             @default("active")
   verifiedAt             DateTime?
   createdAt              DateTime           @default(now())

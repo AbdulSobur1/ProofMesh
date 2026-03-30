@@ -51,6 +51,8 @@ const toProof = (proof: {
   verificationStatus: string
   verificationConfidence: number
   verificationSignals: string
+  riskScore: number
+  riskFlags: string
   moderationStatus: string
   verifiedAt: Date | null
   createdAt: Date
@@ -78,6 +80,8 @@ const toProof = (proof: {
   verificationStatus: proof.verificationStatus,
   verificationConfidence: proof.verificationConfidence,
   verificationSignals: parseVerificationSignals(proof.verificationSignals),
+  riskScore: proof.riskScore,
+  riskFlags: parseTags(proof.riskFlags),
   moderationStatus: proof.moderationStatus as Proof['moderationStatus'],
   verifiedAt: proof.verifiedAt?.toISOString() ?? null,
   endorsements: proof.endorsements.map(toEndorsement),

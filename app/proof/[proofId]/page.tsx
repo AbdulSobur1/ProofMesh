@@ -441,6 +441,22 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                         <p className="mt-1 text-sm text-foreground">{verificationMeta?.label ?? 'Trust signal pending'}</p>
                       </div>
                     </div>
+                    <div className="flex items-start gap-3">
+                      <Flag className="mt-0.5 size-4 text-primary" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Risk Score</p>
+                        <p className="mt-1 text-sm text-foreground">{proof.riskScore ?? 0}/100</p>
+                        {(proof.riskFlags ?? []).length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {(proof.riskFlags ?? []).map((flag) => (
+                              <Badge key={flag} variant="outline" className="border-white/10 bg-white/[0.04] text-muted-foreground">
+                                {flag}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
                 </Card>
 
