@@ -4,6 +4,7 @@ type RiskInput = {
   title: string
   description: string
   link?: string | null
+  evidenceCount?: number
   outcomeSummary?: string | null
   score: number
   tags: string[]
@@ -38,9 +39,9 @@ export const assessProofRisk = (input: RiskInput): RiskAssessment => {
     flags.push('Very short description')
   }
 
-  if (!input.link) {
+  if (!input.link && (input.evidenceCount ?? 0) === 0) {
     score += 12
-    flags.push('No source link provided')
+    flags.push('No supporting evidence provided')
   }
 
   if (input.tags.length === 0) {
@@ -48,9 +49,13 @@ export const assessProofRisk = (input: RiskInput): RiskAssessment => {
     flags.push('No extracted skill tags')
   }
 
-  if (input.score >= 9 && !input.link) {
+  if (input.score >= 9 && !input.link && (input.evidenceCount ?? 0) === 0) {
     score += 22
     flags.push('High AI score without external evidence')
+  }
+
+  if ((input.evidenceCount ?? 0) >= 2) {
+    score = Math.max(0, score - 8)
   }
 
   if (input.existingProofCount === 0 && input.score >= 9) {

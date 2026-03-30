@@ -7,6 +7,7 @@ import {
   Calendar,
   CheckCircle2,
   ExternalLink,
+  Files,
   Flag,
   Hash,
   MessageSquareQuote,
@@ -248,6 +249,9 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                       {proof.verificationConfidence}% confidence
                     </Badge>
                     <Badge variant="secondary" className="border border-white/10 bg-white/[0.04] text-foreground">
+                      {(proof.evidenceItems?.length ?? 0) + (proof.link ? 1 : 0)} evidence link{((proof.evidenceItems?.length ?? 0) + (proof.link ? 1 : 0)) === 1 ? '' : 's'}
+                    </Badge>
+                    <Badge variant="secondary" className="border border-white/10 bg-white/[0.04] text-foreground">
                       {proof.endorsementCount} verification note{proof.endorsementCount === 1 ? '' : 's'}
                     </Badge>
                   </div>
@@ -261,6 +265,15 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                         Outcome Summary
                       </div>
                       <p className="text-sm leading-7 text-foreground/85">{proof.outcomeSummary}</p>
+                    </div>
+                  ) : null}
+
+                  {proof.artifactSummary ? (
+                    <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.04] p-5">
+                      <div className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                        Evidence Summary
+                      </div>
+                      <p className="text-sm leading-7 text-foreground/85">{proof.artifactSummary}</p>
                     </div>
                   ) : null}
 
@@ -292,6 +305,32 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                       </Badge>
                     ))}
                   </div>
+
+                  {(proof.evidenceItems?.length ?? 0) > 0 ? (
+                    <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.04] p-5">
+                      <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                        <Files className="size-4 text-primary" />
+                        Supporting Evidence
+                      </div>
+                      <div className="grid gap-3">
+                        {proof.evidenceItems?.map((item) => (
+                          <a
+                            key={`${item.type}-${item.url}`}
+                            href={item.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                          >
+                            <div>
+                              <p className="font-medium">{item.label}</p>
+                              <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">{item.type.replace('_', ' ')}</p>
+                            </div>
+                            <ExternalLink className="size-4" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
 
                   {proof.feedback && (
                     <div className="mt-6 rounded-[24px] border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-5">

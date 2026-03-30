@@ -3,13 +3,16 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut as nextSignOut } from 'next-auth/react'
-import { MeResponse, ProfileResponse, Proof, Reputation, SessionUser } from '@/lib/types'
+import { MeResponse, ProfileResponse, Proof, Reputation, SessionUser, type ProofEvidenceItem, type ProofSourceCategory } from '@/lib/types'
 import { type ProofProfession, type ProofType } from '@/lib/proof-taxonomy'
 
 interface AddProofInput {
   title: string
   description: string
   link?: string
+  sourceCategory?: ProofSourceCategory
+  artifactSummary?: string
+  evidenceItems?: ProofEvidenceItem[]
   profession: ProofProfession
   proofType: ProofType
   outcomeSummary?: string
@@ -98,6 +101,9 @@ export const ProofProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         title: proof.title,
         description: proof.description,
         link: proof.link,
+        sourceCategory: proof.sourceCategory,
+        artifactSummary: proof.artifactSummary,
+        evidenceItems: proof.evidenceItems,
         profession: proof.profession,
         proofType: proof.proofType,
         outcomeSummary: proof.outcomeSummary,

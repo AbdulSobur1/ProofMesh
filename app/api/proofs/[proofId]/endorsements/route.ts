@@ -6,6 +6,7 @@ import { evaluateVerification, serializeVerificationSignals } from '@/lib/servic
 import { getCurrentToken } from '@/lib/auth-options'
 import { PeerVerification, type PeerVerificationRelationship } from '@/lib/types'
 import { syncUserTrustLevel } from '@/lib/services/trust-server'
+import { parseEvidenceItems } from '@/lib/services/evidence'
 
 const RELATIONSHIPS = ['peer', 'client', 'manager', 'collaborator'] as const
 
@@ -92,6 +93,7 @@ export async function POST(
     const verification = evaluateVerification({
       score: proof.score,
       link: proof.link,
+      evidenceCount: parseEvidenceItems(proof.evidenceItems).length,
       outcomeSummary: proof.outcomeSummary,
       tags: parseTags(proof.tags),
       endorsements: allEndorsements.map((endorsement) => ({

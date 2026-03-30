@@ -11,7 +11,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Upload, CheckCircle2, Lightbulb, ArrowLeft, Sparkles } from 'lucide-react'
+import { Upload, CheckCircle2, Lightbulb, ArrowLeft, Plus, Sparkles, Trash2 } from 'lucide-react'
 import {
   PROFESSION_GUIDANCE,
   PROFESSION_LABELS,
@@ -21,6 +21,27 @@ import {
   type ProofProfession,
   type ProofType,
 } from '@/lib/proof-taxonomy'
+import { type ProofEvidenceItem, type ProofSourceCategory } from '@/lib/types'
+
+const EVIDENCE_TYPE_OPTIONS: Array<{ value: ProofEvidenceItem['type']; label: string }> = [
+  { value: 'repository', label: 'Repository' },
+  { value: 'portfolio', label: 'Portfolio' },
+  { value: 'case_study', label: 'Case study' },
+  { value: 'document', label: 'Document' },
+  { value: 'presentation', label: 'Presentation' },
+  { value: 'video', label: 'Video' },
+  { value: 'dataset', label: 'Dataset' },
+  { value: 'other', label: 'Other' },
+]
+
+const SOURCE_CATEGORY_OPTIONS: Array<{ value: ProofSourceCategory; label: string }> = [
+  { value: 'general', label: 'General work sample' },
+  { value: 'github', label: 'GitHub / code project' },
+  { value: 'portfolio', label: 'Portfolio piece' },
+  { value: 'case_study', label: 'Case study' },
+  { value: 'document', label: 'Document / artifact' },
+  { value: 'presentation', label: 'Presentation / deck' },
+]
 
 export default function SubmitProof() {
   const router = useRouter()
@@ -31,11 +52,16 @@ export default function SubmitProof() {
   const [formData, setFormData] = useState({
     profession: 'software_engineering' as ProofProfession,
     proofType: 'project' as ProofType,
+    sourceCategory: 'general' as ProofSourceCategory,
     title: '',
     description: '',
     outcomeSummary: '',
+    artifactSummary: '',
     link: '',
   })
+  const [evidenceItems, setEvidenceItems] = useState<Array<{ label: string; url: string; type: ProofEvidenceItem['type'] }>>([
+    { label: '', url: '', type: 'repository' },
+  ])
 
   const guidance = PROFESSION_GUIDANCE[formData.profession]
 
@@ -64,6 +90,15 @@ export default function SubmitProof() {
         title: formData.title,
         description: formData.description,
         link: formData.link || undefined,
+        sourceCategory: formData.sourceCategory,
+        artifactSummary: formData.artifactSummary || undefined,
+        evidenceItems: evidenceItems
+          .filter((item) => item.label.trim() && item.url.trim())
+          .map((item) => ({
+            label: item.label.trim(),
+            url: item.url.trim(),
+            type: item.type,
+          })),
         profession: formData.profession,
         proofType: formData.proofType,
         outcomeSummary: formData.outcomeSummary || undefined,
@@ -72,11 +107,14 @@ export default function SubmitProof() {
       setFormData({
         profession: 'software_engineering',
         proofType: 'project',
+        sourceCategory: 'general',
         title: '',
         description: '',
         outcomeSummary: '',
+        artifactSummary: '',
         link: '',
       })
+      setEvidenceItems([{ label: '', url: '', type: 'repository' }])
 
       setTimeout(() => {
         router.push('/dashboard')
@@ -181,6 +219,23 @@ export default function SubmitProof() {
                     </div>
 
                     <div className="space-y-2">
+                      <label className="block text-sm font-medium text-foreground">Primary source type</label>
+                      <select
+                        name="sourceCategory"
+                        value={formData.sourceCategory}
+                        onChange={handleChange}
+                        disabled={isLoading}
+                        className="h-11 w-full rounded-xl border border-input bg-card/70 px-4 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                      >
+                        {SOURCE_CATEGORY_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
                       <label className="block text-sm font-medium text-foreground">
                         Proof title <span className="text-primary">*</span>
                       </label>
@@ -234,6 +289,106 @@ export default function SubmitProof() {
                         placeholder="https://example.com/case-study-or-work-sample"
                         disabled={isLoading}
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-foreground">
+                        Evidence summary <span className="text-muted-foreground font-normal">(optional)</span>
+                      </label>
+                      <Textarea
+                        name="artifactSummary"
+                        value={formData.artifactSummary}
+                        onChange={handleChange}
+                        placeholder="Summarize the repo, deck, doc set, deliverables, or other artifacts attached below."
+                        rows={3}
+                        disabled={isLoading}
+                      />
+                    </div>
+
+                    <div className="space-y-3 rounded-2xl border border-border/60 bg-background/40 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-foreground">Supporting evidence links</label>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Add GitHub repos, portfolio entries, case studies, docs, decks, videos, or other evidence.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setEvidenceItems((current) => [...current, { label: '', url: '', type: 'other' }])
+                          }
+                          disabled={isLoading || evidenceItems.length >= 6}
+                        >
+                          <Plus className="size-4" />
+                          Add link
+                        </Button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {evidenceItems.map((item, index) => (
+                          <div key={`evidence-${index}`} className="grid gap-3 rounded-2xl border border-border/60 bg-background/60 p-4 md:grid-cols-[1fr_1.4fr_160px_auto]">
+                            <Input
+                              value={item.label}
+                              onChange={(event) =>
+                                setEvidenceItems((current) =>
+                                  current.map((entry, entryIndex) =>
+                                    entryIndex === index ? { ...entry, label: event.target.value } : entry
+                                  )
+                                )
+                              }
+                              placeholder="GitHub repo"
+                              disabled={isLoading}
+                            />
+                            <Input
+                              type="url"
+                              value={item.url}
+                              onChange={(event) =>
+                                setEvidenceItems((current) =>
+                                  current.map((entry, entryIndex) =>
+                                    entryIndex === index ? { ...entry, url: event.target.value } : entry
+                                  )
+                                )
+                              }
+                              placeholder="https://github.com/..."
+                              disabled={isLoading}
+                            />
+                            <select
+                              value={item.type}
+                              onChange={(event) =>
+                                setEvidenceItems((current) =>
+                                  current.map((entry, entryIndex) =>
+                                    entryIndex === index ? { ...entry, type: event.target.value as ProofEvidenceItem['type'] } : entry
+                                  )
+                                )
+                              }
+                              disabled={isLoading}
+                              className="h-11 w-full rounded-xl border border-input bg-card/70 px-4 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            >
+                              {EVIDENCE_TYPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                setEvidenceItems((current) =>
+                                  current.length === 1 ? [{ label: '', url: '', type: 'repository' }] : current.filter((_, entryIndex) => entryIndex !== index)
+                                )
+                              }
+                              disabled={isLoading}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="flex gap-3 pt-2">

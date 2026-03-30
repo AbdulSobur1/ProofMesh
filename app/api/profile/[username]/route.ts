@@ -7,6 +7,7 @@ import { parseVerificationSignals } from '@/lib/services/verification'
 import { emptyNetworkCounts, resolveProfileConnectionState } from '@/lib/services/network'
 import { getCurrentToken } from '@/lib/auth-options'
 import { syncUserTrustLevel } from '@/lib/services/trust-server'
+import { parseEvidenceItems } from '@/lib/services/evidence'
 
 const recentViewerSelect = {
   id: true,
@@ -45,6 +46,9 @@ const toProof = (proof: {
   title: string
   description: string
   link: string | null
+  sourceCategory: string
+  artifactSummary: string | null
+  evidenceItems: string
   profession: string
   proofType: string
   outcomeSummary: string | null
@@ -73,6 +77,9 @@ const toProof = (proof: {
   title: proof.title,
   description: proof.description,
   link: proof.link,
+  sourceCategory: proof.sourceCategory as Proof['sourceCategory'],
+  artifactSummary: proof.artifactSummary,
+  evidenceItems: parseEvidenceItems(proof.evidenceItems),
   profession: proof.profession,
   proofType: proof.proofType,
   outcomeSummary: proof.outcomeSummary,

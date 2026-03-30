@@ -9,6 +9,14 @@ export type VerificationSignal = {
 }
 
 export type PeerVerificationRelationship = 'peer' | 'client' | 'manager' | 'collaborator'
+export type ProofEvidenceType = 'repository' | 'portfolio' | 'case_study' | 'document' | 'presentation' | 'video' | 'dataset' | 'other'
+export type ProofSourceCategory = 'general' | 'github' | 'portfolio' | 'case_study' | 'document' | 'presentation'
+
+export type ProofEvidenceItem = {
+  label: string
+  url: string
+  type: ProofEvidenceType
+}
 
 export type PeerVerification = {
   id: string
@@ -36,6 +44,9 @@ export type Proof = {
   title: string
   description: string
   link: string | null
+  sourceCategory?: ProofSourceCategory
+  artifactSummary?: string | null
+  evidenceItems?: ProofEvidenceItem[]
   profession: string
   proofType: string
   outcomeSummary: string | null
@@ -455,6 +466,7 @@ export type SearchProofResult = {
   id: string
   title: string
   description: string
+  sourceCategory?: ProofSourceCategory
   profession: string
   proofType: string
   score: number

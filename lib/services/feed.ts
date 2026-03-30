@@ -1,12 +1,16 @@
 import { FeedComment, FeedPost, Proof } from '@/lib/types'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
+import { parseEvidenceItems } from '@/lib/services/evidence'
 
 const toProof = (proof: {
   id: string
   title: string
   description: string
   link: string | null
+  sourceCategory: string
+  artifactSummary: string | null
+  evidenceItems: string
   profession: string
   proofType: string
   outcomeSummary: string | null
@@ -27,6 +31,9 @@ const toProof = (proof: {
   title: proof.title,
   description: proof.description,
   link: proof.link,
+  sourceCategory: proof.sourceCategory as Proof['sourceCategory'],
+  artifactSummary: proof.artifactSummary,
+  evidenceItems: parseEvidenceItems(proof.evidenceItems),
   profession: proof.profession,
   proofType: proof.proofType,
   outcomeSummary: proof.outcomeSummary,
@@ -66,6 +73,9 @@ export const toFeedPost = (post: {
     title: string
     description: string
     link: string | null
+    sourceCategory: string
+    artifactSummary: string | null
+    evidenceItems: string
     profession: string
     proofType: string
     outcomeSummary: string | null

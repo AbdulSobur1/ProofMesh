@@ -337,6 +337,9 @@ model Proof {
   title                  String
   description            String
   link                   String?
+  sourceCategory         String             @default("general")
+  artifactSummary        String?
+  evidenceItems          String             @default("[]")
   profession             String             @default("software_engineering")
   proofType              String             @default("project")
   outcomeSummary         String?

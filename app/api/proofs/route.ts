@@ -10,11 +10,21 @@ import { evaluateVerification, parseVerificationSignals, serializeVerificationSi
 import { assessProofRisk } from '@/lib/services/risk'
 import { PeerVerification, Proof } from '@/lib/types'
 import { syncUserTrustLevel } from '@/lib/services/trust-server'
+import { parseEvidenceItems, serializeEvidenceItems } from '@/lib/services/evidence'
+
+const evidenceItemSchema = z.object({
+  label: z.string().trim().min(1).max(80),
+  url: z.string().url(),
+  type: z.enum(['repository', 'portfolio', 'case_study', 'document', 'presentation', 'video', 'dataset', 'other']),
+})
 
 const createSchema = z.object({
   title: z.string().min(2),
   description: z.string().min(10),
   link: z.string().url().optional().or(z.literal('')),
+  sourceCategory: z.enum(['general', 'github', 'portfolio', 'case_study', 'document', 'presentation']).default('general'),
+  artifactSummary: z.string().max(320).optional().or(z.literal('')),
+  evidenceItems: z.array(evidenceItemSchema).max(6).optional().default([]),
   profession: z.enum(PROOF_PROFESSIONS),
   proofType: z.enum(PROOF_TYPES),
   outcomeSummary: z.string().max(240).optional().or(z.literal('')),
@@ -47,6 +57,9 @@ const toProofDto = (proof: {
   title: string
   description: string
   link: string | null
+  sourceCategory: string
+  artifactSummary: string | null
+  evidenceItems: string
   profession: string
   proofType: string
   outcomeSummary: string | null
@@ -77,6 +90,9 @@ const toProofDto = (proof: {
   title: proof.title,
   description: proof.description,
   link: proof.link,
+  sourceCategory: proof.sourceCategory as Proof['sourceCategory'],
+  artifactSummary: proof.artifactSummary,
+  evidenceItems: parseEvidenceItems(proof.evidenceItems),
   profession: proof.profession,
   proofType: proof.proofType,
   outcomeSummary: proof.outcomeSummary,
@@ -145,6 +161,7 @@ export async function POST(request: Request) {
       title: input.title,
       description: input.description,
       link: input.link || undefined,
+      sourceCategory: input.sourceCategory,
       profession: input.profession,
       proofType: input.proofType,
       outcomeSummary: input.outcomeSummary || undefined,
@@ -153,6 +170,7 @@ export async function POST(request: Request) {
     const verification = evaluateVerification({
       score: evaluation.score,
       link: input.link || undefined,
+      evidenceCount: input.evidenceItems.length,
       outcomeSummary: input.outcomeSummary || undefined,
       tags: evaluation.tags,
       endorsements: [],
@@ -166,6 +184,7 @@ export async function POST(request: Request) {
       title: input.title,
       description: input.description,
       link: input.link || undefined,
+      evidenceCount: input.evidenceItems.length,
       outcomeSummary: input.outcomeSummary || undefined,
       score: evaluation.score,
       tags: evaluation.tags,
@@ -177,6 +196,9 @@ export async function POST(request: Request) {
         title: input.title,
         description: input.description,
         link: input.link || null,
+        sourceCategory: input.sourceCategory,
+        artifactSummary: input.artifactSummary || null,
+        evidenceItems: serializeEvidenceItems(input.evidenceItems),
         profession: input.profession,
         proofType: input.proofType,
         outcomeSummary: input.outcomeSummary || null,

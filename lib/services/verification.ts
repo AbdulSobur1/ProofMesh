@@ -60,6 +60,7 @@ export const getVerificationMeta = (status: string) => {
 export const evaluateVerification = (input: {
   score: number
   link?: string | null
+  evidenceCount?: number
   outcomeSummary?: string | null
   tags: string[]
   endorsements?: Array<Pick<PeerVerification, 'relationship' | 'message' | 'verifierCompany'>>
@@ -75,6 +76,14 @@ export const evaluateVerification = (input: {
   if (input.link) {
     confidence += 20
     signals.push(signal('Linked external evidence', 'high'))
+  }
+
+  if ((input.evidenceCount ?? 0) >= 2) {
+    confidence += 12
+    signals.push(signal('Multiple supporting evidence links', 'high'))
+  } else if ((input.evidenceCount ?? 0) === 1) {
+    confidence += 6
+    signals.push(signal('Supporting evidence attached', 'medium'))
   }
 
   if ((input.outcomeSummary ?? '').trim().length >= 20) {

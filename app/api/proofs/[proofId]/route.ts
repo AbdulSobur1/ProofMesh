@@ -5,6 +5,7 @@ import { PeerVerification, Proof } from '@/lib/types'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
 import { syncUserTrustLevel } from '@/lib/services/trust-server'
+import { parseEvidenceItems } from '@/lib/services/evidence'
 
 const toEndorsement = (endorsement: {
   id: string
@@ -33,6 +34,9 @@ const toProof = (proof: {
   title: string
   description: string
   link: string | null
+  sourceCategory: string
+  artifactSummary: string | null
+  evidenceItems: string
   profession: string
   proofType: string
   outcomeSummary: string | null
@@ -64,6 +68,9 @@ const toProof = (proof: {
   title: proof.title,
   description: proof.description,
   link: proof.link,
+  sourceCategory: proof.sourceCategory as Proof['sourceCategory'],
+  artifactSummary: proof.artifactSummary,
+  evidenceItems: parseEvidenceItems(proof.evidenceItems),
   profession: proof.profession,
   proofType: proof.proofType,
   outcomeSummary: proof.outcomeSummary,
