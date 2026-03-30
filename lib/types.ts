@@ -66,6 +66,40 @@ export type ProfessionalProfile = {
   createdAt: string
 }
 
+export type WorkExperience = {
+  id: string
+  title: string
+  company: string
+  location: string | null
+  startDate: string
+  endDate: string | null
+  isCurrent: boolean
+  description: string | null
+}
+
+export type EducationEntry = {
+  id: string
+  school: string
+  degree: string
+  fieldOfStudy: string | null
+  startDate: string | null
+  endDate: string | null
+  description: string | null
+}
+
+export type CertificationEntry = {
+  id: string
+  name: string
+  issuer: string
+  issueDate: string | null
+  credentialUrl: string | null
+}
+
+export type ClaimedSkill = {
+  id: string
+  name: string
+}
+
 export type ProfileUser = {
   id: string
   username: string
@@ -85,6 +119,11 @@ export type ProfileResponse = {
   user: ProfileUser
   proofs: Proof[]
   reputation: Reputation
+  workExperiences: WorkExperience[]
+  educations: EducationEntry[]
+  certifications: CertificationEntry[]
+  claimedSkills: ClaimedSkill[]
+  provenSkills: TagFrequency[]
 }
 
 export type ProofDetailResponse = {
@@ -111,6 +150,40 @@ export type MeResponse = {
   user: SessionUser | null
 }
 
+export type EditWorkExperienceInput = {
+  id: string
+  title: string
+  company: string
+  location: string
+  startDate: string
+  endDate: string
+  isCurrent: boolean
+  description: string
+}
+
+export type EditEducationInput = {
+  id: string
+  school: string
+  degree: string
+  fieldOfStudy: string
+  startDate: string
+  endDate: string
+  description: string
+}
+
+export type EditCertificationInput = {
+  id: string
+  name: string
+  issuer: string
+  issueDate: string
+  credentialUrl: string
+}
+
+export type EditClaimedSkillInput = {
+  id: string
+  name: string
+}
+
 export type UpdateProfileInput = {
   displayName: string
   headline: string
@@ -121,6 +194,10 @@ export type UpdateProfileInput = {
   currentRole: string
   currentCompany: string
   yearsExperience: string
+  workExperiences: EditWorkExperienceInput[]
+  educations: EditEducationInput[]
+  certifications: EditCertificationInput[]
+  claimedSkills: EditClaimedSkillInput[]
 }
 
 export type ProofSortMode = 'newest' | 'oldest' | 'highest' | 'lowest'

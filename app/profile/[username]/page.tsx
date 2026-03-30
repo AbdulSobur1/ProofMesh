@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { use } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BriefcaseBusiness, Code2, MapPin, PencilLine, ShieldCheck, Trophy, User, Zap } from 'lucide-react'
+import { ArrowRight, Award, BriefcaseBusiness, Code2, GraduationCap, MapPin, PencilLine, ShieldCheck, Trophy, User, Zap } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { ProofCard } from '@/components/proof-card'
@@ -68,6 +68,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   }
 
   const proofs = useMemo(() => data?.proofs ?? [], [data])
+  const workExperiences = useMemo(() => data?.workExperiences ?? [], [data])
+  const educations = useMemo(() => data?.educations ?? [], [data])
+  const certifications = useMemo(() => data?.certifications ?? [], [data])
+  const claimedSkills = useMemo(() => data?.claimedSkills ?? [], [data])
+  const provenSkills = useMemo(() => data?.provenSkills ?? [], [data])
 
   const filteredProofs = useMemo(() => {
     const tagFilter = selectedTag === 'all' ? null : selectedTag
@@ -93,6 +98,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     'Public reputation profile'
   const isOwnProfile = currentUser?.username === username
   const profileInitial = (profileName[0] ?? username[0] ?? 'P').toUpperCase()
+  const claimedSkillSet = new Set(claimedSkills.map((entry) => entry.name.trim().toLowerCase()))
+  const matchedClaimedSkills = claimedSkills.filter((entry) =>
+    provenSkills.some((tag) => tag.tag.trim().toLowerCase() === entry.name.trim().toLowerCase())
+  )
+  const unmatchedClaimedSkills = claimedSkills.filter((entry) => !matchedClaimedSkills.some((match) => match.id === entry.id))
 
   return (
     <div className="min-h-screen bg-background">
@@ -230,6 +240,196 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             </Card>
 
             <ReputationChart timeline={timeline} />
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
+            <Card className="rounded-[2rem] border-border/60 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Career experience</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">The timeline behind the proof.</p>
+                </div>
+                <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                  {workExperiences.length} role{workExperiences.length === 1 ? '' : 's'}
+                </Badge>
+              </div>
+              {workExperiences.length === 0 ? (
+                <p className="mt-6 text-sm text-muted-foreground">No experience added yet.</p>
+              ) : (
+                <div className="mt-5 space-y-4">
+                  {workExperiences.map((entry) => (
+                    <div key={entry.id} className="rounded-2xl border border-border/60 bg-background/40 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <BriefcaseBusiness className="size-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="text-base font-semibold text-foreground">{entry.title}</h4>
+                            <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                              {entry.company}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {[entry.location, `${entry.startDate} - ${entry.isCurrent ? 'Present' : entry.endDate || 'Present'}`].filter(Boolean).join(' • ')}
+                          </p>
+                          {entry.description ? (
+                            <p className="mt-3 text-sm leading-6 text-muted-foreground">{entry.description}</p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <Card className="rounded-[2rem] border-border/60 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Claimed vs proven skills</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">What this person says they do versus what the proof history supports.</p>
+                </div>
+                <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                  {matchedClaimedSkills.length}/{claimedSkills.length} supported
+                </Badge>
+              </div>
+              <div className="mt-5 space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Claimed skills</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {claimedSkills.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No claimed skills added yet.</p>
+                    ) : (
+                      claimedSkills.map((entry) => {
+                        const matched = claimedSkillSet.has(entry.name.trim().toLowerCase()) &&
+                          provenSkills.some((tag) => tag.tag.trim().toLowerCase() === entry.name.trim().toLowerCase())
+
+                        return (
+                          <Badge
+                            key={entry.id}
+                            variant="secondary"
+                            className={
+                              matched
+                                ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                : 'border border-amber-500/30 bg-amber-500/10 text-amber-300'
+                            }
+                          >
+                            {entry.name}
+                          </Badge>
+                        )
+                      })
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Proven from proof</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {provenSkills.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No proven skills extracted yet.</p>
+                    ) : (
+                      provenSkills.slice(0, 10).map((tag) => (
+                        <Badge key={tag.tag} variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                          {tag.tag}
+                          <span className="ml-1 text-xs text-muted-foreground">({tag.count})</span>
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </div>
+                {unmatchedClaimedSkills.length > 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Some claimed skills are not yet supported by submitted proof. That gives this profile room to become more credible over time.
+                  </p>
+                ) : null}
+              </div>
+            </Card>
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
+            <Card className="rounded-[2rem] border-border/60 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Education</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Formal learning and academic background.</p>
+                </div>
+                <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                  {educations.length} entr{educations.length === 1 ? 'y' : 'ies'}
+                </Badge>
+              </div>
+              {educations.length === 0 ? (
+                <p className="mt-6 text-sm text-muted-foreground">No education added yet.</p>
+              ) : (
+                <div className="mt-5 space-y-4">
+                  {educations.map((entry) => (
+                    <div key={entry.id} className="rounded-2xl border border-border/60 bg-background/40 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <GraduationCap className="size-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-base font-semibold text-foreground">{entry.school}</h4>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {[entry.degree, entry.fieldOfStudy].filter(Boolean).join(' • ')}
+                          </p>
+                          {(entry.startDate || entry.endDate) ? (
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {[entry.startDate, entry.endDate].filter(Boolean).join(' - ')}
+                            </p>
+                          ) : null}
+                          {entry.description ? (
+                            <p className="mt-3 text-sm leading-6 text-muted-foreground">{entry.description}</p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <Card className="rounded-[2rem] border-border/60 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Certifications</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Credentials that reinforce the proof-backed profile.</p>
+                </div>
+                <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                  {certifications.length} cert{certifications.length === 1 ? '' : 's'}
+                </Badge>
+              </div>
+              {certifications.length === 0 ? (
+                <p className="mt-6 text-sm text-muted-foreground">No certifications added yet.</p>
+              ) : (
+                <div className="mt-5 space-y-4">
+                  {certifications.map((entry) => (
+                    <div key={entry.id} className="rounded-2xl border border-border/60 bg-background/40 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <Award className="size-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="text-base font-semibold text-foreground">{entry.name}</h4>
+                            <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                              {entry.issuer}
+                            </Badge>
+                          </div>
+                          {entry.issueDate ? (
+                            <p className="mt-1 text-sm text-muted-foreground">Issued {entry.issueDate}</p>
+                          ) : null}
+                          {entry.credentialUrl ? (
+                            <a href={entry.credentialUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-sm font-medium text-primary hover:underline">
+                              View credential
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
           </div>
 
           <section className="mt-10">

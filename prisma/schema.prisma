@@ -23,9 +23,67 @@ model User {
   yearsExperience     Int?
   createdAt           DateTime         @default(now())
   proofs              Proof[]
+  workExperiences     WorkExperience[]
+  educations          Education[]
+  certifications      Certification[]
+  claimedSkills       ClaimedSkill[]
   savedCandidates     SavedCandidate[] @relation("RecruiterSavedCandidates")
   candidateShortlists SavedCandidate[] @relation("CandidateSavedByRecruiters")
   jobs                JobPost[]
+}
+
+model WorkExperience {
+  id           String   @id @default(cuid())
+  title        String
+  company      String
+  location     String?
+  startDate    String
+  endDate      String?
+  isCurrent    Boolean  @default(false)
+  description  String?
+  displayOrder Int      @default(0)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, displayOrder])
+}
+
+model Education {
+  id            String   @id @default(cuid())
+  school        String
+  degree        String
+  fieldOfStudy  String?
+  startDate     String?
+  endDate       String?
+  description   String?
+  displayOrder  Int      @default(0)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, displayOrder])
+}
+
+model Certification {
+  id            String   @id @default(cuid())
+  name          String
+  issuer        String
+  issueDate     String?
+  credentialUrl String?
+  displayOrder  Int      @default(0)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, displayOrder])
+}
+
+model ClaimedSkill {
+  id            String   @id @default(cuid())
+  name          String
+  displayOrder  Int      @default(0)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, displayOrder])
 }
 
 model Proof {

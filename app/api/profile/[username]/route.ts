@@ -70,6 +70,66 @@ const toProof = (proof: {
   createdAt: proof.createdAt.toISOString(),
 })
 
+const toWorkExperience = (entry: {
+  id: string
+  title: string
+  company: string
+  location: string | null
+  startDate: string
+  endDate: string | null
+  isCurrent: boolean
+  description: string | null
+}) => ({
+  id: entry.id,
+  title: entry.title,
+  company: entry.company,
+  location: entry.location,
+  startDate: entry.startDate,
+  endDate: entry.endDate,
+  isCurrent: entry.isCurrent,
+  description: entry.description,
+})
+
+const toEducation = (entry: {
+  id: string
+  school: string
+  degree: string
+  fieldOfStudy: string | null
+  startDate: string | null
+  endDate: string | null
+  description: string | null
+}) => ({
+  id: entry.id,
+  school: entry.school,
+  degree: entry.degree,
+  fieldOfStudy: entry.fieldOfStudy,
+  startDate: entry.startDate,
+  endDate: entry.endDate,
+  description: entry.description,
+})
+
+const toCertification = (entry: {
+  id: string
+  name: string
+  issuer: string
+  issueDate: string | null
+  credentialUrl: string | null
+}) => ({
+  id: entry.id,
+  name: entry.name,
+  issuer: entry.issuer,
+  issueDate: entry.issueDate,
+  credentialUrl: entry.credentialUrl,
+})
+
+const toClaimedSkill = (entry: {
+  id: string
+  name: string
+}) => ({
+  id: entry.id,
+  name: entry.name,
+})
+
 export async function GET(
   _request: Request,
   { params }: { params: { username: string } }
@@ -78,20 +138,39 @@ export async function GET(
 
   const user = await prisma.user.findUnique({
     where: { username },
+    include: {
+      workExperiences: {
+        orderBy: { displayOrder: 'asc' },
+      },
+      educations: {
+        orderBy: { displayOrder: 'asc' },
+      },
+      certifications: {
+        orderBy: { displayOrder: 'asc' },
+      },
+      claimedSkills: {
+        orderBy: { displayOrder: 'asc' },
+      },
+    },
   })
 
   if (!user) {
     return NextResponse.json({
       user: null,
-      proofs: [],
-      reputation: {
+    proofs: [],
+    reputation: {
         averageScore: 0,
         totalProofs: 0,
         tagFrequency: [],
         verifiedProofs: 0,
         averageConfidence: 0,
-        endorsementCount: 0,
-      },
+      endorsementCount: 0,
+    },
+    workExperiences: [],
+    educations: [],
+    certifications: [],
+    claimedSkills: [],
+    provenSkills: [],
     })
   }
 
@@ -125,5 +204,10 @@ export async function GET(
     },
     proofs: proofDtos,
     reputation,
+    workExperiences: user.workExperiences.map(toWorkExperience),
+    educations: user.educations.map(toEducation),
+    certifications: user.certifications.map(toCertification),
+    claimedSkills: user.claimedSkills.map(toClaimedSkill),
+    provenSkills: reputation.tagFrequency,
   })
 }

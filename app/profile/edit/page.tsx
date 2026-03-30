@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, UserRound } from 'lucide-react'
+import { ArrowLeft, Plus, Save, Trash2, UserRound } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -12,7 +12,18 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProofs } from '@/lib/proof-context'
-import { ProfessionalProfile, UpdateProfileInput } from '@/lib/types'
+import {
+  ClaimedSkill,
+  CertificationEntry,
+  EditCertificationInput,
+  EditClaimedSkillInput,
+  EditEducationInput,
+  EditWorkExperienceInput,
+  EducationEntry,
+  ProfessionalProfile,
+  UpdateProfileInput,
+  WorkExperience,
+} from '@/lib/types'
 
 const emptyForm: UpdateProfileInput = {
   displayName: '',
@@ -24,7 +35,45 @@ const emptyForm: UpdateProfileInput = {
   currentRole: '',
   currentCompany: '',
   yearsExperience: '',
+  workExperiences: [],
+  educations: [],
+  certifications: [],
+  claimedSkills: [],
 }
+
+const createExperience = (): EditWorkExperienceInput => ({
+  id: crypto.randomUUID(),
+  title: '',
+  company: '',
+  location: '',
+  startDate: '',
+  endDate: '',
+  isCurrent: false,
+  description: '',
+})
+
+const createEducation = (): EditEducationInput => ({
+  id: crypto.randomUUID(),
+  school: '',
+  degree: '',
+  fieldOfStudy: '',
+  startDate: '',
+  endDate: '',
+  description: '',
+})
+
+const createCertification = (): EditCertificationInput => ({
+  id: crypto.randomUUID(),
+  name: '',
+  issuer: '',
+  issueDate: '',
+  credentialUrl: '',
+})
+
+const createClaimedSkill = (): EditClaimedSkillInput => ({
+  id: crypto.randomUUID(),
+  name: '',
+})
 
 export default function EditProfilePage() {
   const router = useRouter()
@@ -34,6 +83,48 @@ export default function EditProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  const updateExperience = (id: string, field: keyof EditWorkExperienceInput, value: string | boolean) => {
+    setForm((current) => ({
+      ...current,
+      workExperiences: current.workExperiences.map((entry) =>
+        entry.id === id
+          ? {
+              ...entry,
+              [field]: value,
+              ...(field === 'isCurrent' && value === true ? { endDate: '' } : {}),
+            }
+          : entry
+      ),
+    }))
+  }
+
+  const updateEducation = (id: string, field: keyof EditEducationInput, value: string) => {
+    setForm((current) => ({
+      ...current,
+      educations: current.educations.map((entry) =>
+        entry.id === id ? { ...entry, [field]: value } : entry
+      ),
+    }))
+  }
+
+  const updateCertification = (id: string, field: keyof EditCertificationInput, value: string) => {
+    setForm((current) => ({
+      ...current,
+      certifications: current.certifications.map((entry) =>
+        entry.id === id ? { ...entry, [field]: value } : entry
+      ),
+    }))
+  }
+
+  const updateClaimedSkill = (id: string, value: string) => {
+    setForm((current) => ({
+      ...current,
+      claimedSkills: current.claimedSkills.map((entry) =>
+        entry.id === id ? { ...entry, name: value } : entry
+      ),
+    }))
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -46,7 +137,13 @@ export default function EditProfilePage() {
           throw new Error('Failed to load your profile')
         }
 
-        const payload = (await response.json()) as { user: ProfessionalProfile }
+        const payload = (await response.json()) as {
+          user: ProfessionalProfile
+          workExperiences: WorkExperience[]
+          educations: EducationEntry[]
+          certifications: CertificationEntry[]
+          claimedSkills: ClaimedSkill[]
+        }
         setForm({
           displayName: payload.user.displayName ?? '',
           headline: payload.user.headline ?? '',
@@ -57,6 +154,36 @@ export default function EditProfilePage() {
           currentRole: payload.user.currentRole ?? '',
           currentCompany: payload.user.currentCompany ?? '',
           yearsExperience: payload.user.yearsExperience?.toString() ?? '',
+          workExperiences: payload.workExperiences.map((entry) => ({
+            id: entry.id,
+            title: entry.title,
+            company: entry.company,
+            location: entry.location ?? '',
+            startDate: entry.startDate,
+            endDate: entry.endDate ?? '',
+            isCurrent: entry.isCurrent,
+            description: entry.description ?? '',
+          })),
+          educations: payload.educations.map((entry) => ({
+            id: entry.id,
+            school: entry.school,
+            degree: entry.degree,
+            fieldOfStudy: entry.fieldOfStudy ?? '',
+            startDate: entry.startDate ?? '',
+            endDate: entry.endDate ?? '',
+            description: entry.description ?? '',
+          })),
+          certifications: payload.certifications.map((entry) => ({
+            id: entry.id,
+            name: entry.name,
+            issuer: entry.issuer,
+            issueDate: entry.issueDate ?? '',
+            credentialUrl: entry.credentialUrl ?? '',
+          })),
+          claimedSkills: payload.claimedSkills.map((entry) => ({
+            id: entry.id,
+            name: entry.name,
+          })),
         })
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Unable to load profile')
@@ -211,6 +338,142 @@ export default function EditProfilePage() {
                       rows={6}
                       placeholder="Summarize the kind of work you do, the problems you solve, and the evidence people should expect to see in your proof history."
                     />
+                  </div>
+
+                  <div className="space-y-4 rounded-[1.5rem] border border-border/60 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-lg font-semibold text-foreground">Work experience</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">Add the roles that explain your career path behind the proof.</p>
+                      </div>
+                      <Button type="button" variant="outline" onClick={() => setForm((current) => ({ ...current, workExperiences: [...current.workExperiences, createExperience()] }))}>
+                        <Plus className="size-4" />
+                        Add role
+                      </Button>
+                    </div>
+
+                    {form.workExperiences.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No roles added yet.</p>
+                    ) : (
+                      form.workExperiences.map((entry) => (
+                        <div key={entry.id} className="space-y-4 rounded-2xl border border-border/60 bg-background/40 p-4">
+                          <div className="flex justify-end">
+                            <Button type="button" variant="ghost" size="sm" onClick={() => setForm((current) => ({ ...current, workExperiences: current.workExperiences.filter((item) => item.id !== entry.id) }))}>
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <Input value={entry.title} onChange={(event) => updateExperience(entry.id, 'title', event.target.value)} placeholder="Senior Product Designer" />
+                            <Input value={entry.company} onChange={(event) => updateExperience(entry.id, 'company', event.target.value)} placeholder="ProofMesh" />
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-3">
+                            <Input value={entry.location} onChange={(event) => updateExperience(entry.id, 'location', event.target.value)} placeholder="Remote" />
+                            <Input value={entry.startDate} onChange={(event) => updateExperience(entry.id, 'startDate', event.target.value)} placeholder="Jan 2023" />
+                            <Input value={entry.endDate} onChange={(event) => updateExperience(entry.id, 'endDate', event.target.value)} placeholder={entry.isCurrent ? 'Current role' : 'Mar 2025'} disabled={entry.isCurrent} />
+                          </div>
+                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <input type="checkbox" checked={entry.isCurrent} onChange={(event) => updateExperience(entry.id, 'isCurrent', event.target.checked)} />
+                            I currently work here
+                          </label>
+                          <Textarea value={entry.description} onChange={(event) => updateExperience(entry.id, 'description', event.target.value)} rows={4} placeholder="Describe the scope, outcomes, and the kind of work this role is evidence for." />
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="space-y-4 rounded-[1.5rem] border border-border/60 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-lg font-semibold text-foreground">Education</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">Add formal education that supports your professional story.</p>
+                      </div>
+                      <Button type="button" variant="outline" onClick={() => setForm((current) => ({ ...current, educations: [...current.educations, createEducation()] }))}>
+                        <Plus className="size-4" />
+                        Add education
+                      </Button>
+                    </div>
+                    {form.educations.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No education entries added yet.</p>
+                    ) : (
+                      form.educations.map((entry) => (
+                        <div key={entry.id} className="space-y-4 rounded-2xl border border-border/60 bg-background/40 p-4">
+                          <div className="flex justify-end">
+                            <Button type="button" variant="ghost" size="sm" onClick={() => setForm((current) => ({ ...current, educations: current.educations.filter((item) => item.id !== entry.id) }))}>
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <Input value={entry.school} onChange={(event) => updateEducation(entry.id, 'school', event.target.value)} placeholder="University of Lagos" />
+                            <Input value={entry.degree} onChange={(event) => updateEducation(entry.id, 'degree', event.target.value)} placeholder="B.Sc. Computer Science" />
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-3">
+                            <Input value={entry.fieldOfStudy} onChange={(event) => updateEducation(entry.id, 'fieldOfStudy', event.target.value)} placeholder="Human-Computer Interaction" />
+                            <Input value={entry.startDate} onChange={(event) => updateEducation(entry.id, 'startDate', event.target.value)} placeholder="2018" />
+                            <Input value={entry.endDate} onChange={(event) => updateEducation(entry.id, 'endDate', event.target.value)} placeholder="2022" />
+                          </div>
+                          <Textarea value={entry.description} onChange={(event) => updateEducation(entry.id, 'description', event.target.value)} rows={3} placeholder="Anything notable: specialization, distinction, thesis, society leadership, or relevant coursework." />
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="space-y-4 rounded-[1.5rem] border border-border/60 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-lg font-semibold text-foreground">Certifications</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">Add certifications that support your claims and specializations.</p>
+                      </div>
+                      <Button type="button" variant="outline" onClick={() => setForm((current) => ({ ...current, certifications: [...current.certifications, createCertification()] }))}>
+                        <Plus className="size-4" />
+                        Add certification
+                      </Button>
+                    </div>
+                    {form.certifications.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No certifications added yet.</p>
+                    ) : (
+                      form.certifications.map((entry) => (
+                        <div key={entry.id} className="space-y-4 rounded-2xl border border-border/60 bg-background/40 p-4">
+                          <div className="flex justify-end">
+                            <Button type="button" variant="ghost" size="sm" onClick={() => setForm((current) => ({ ...current, certifications: current.certifications.filter((item) => item.id !== entry.id) }))}>
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <Input value={entry.name} onChange={(event) => updateCertification(entry.id, 'name', event.target.value)} placeholder="Google UX Design Certificate" />
+                            <Input value={entry.issuer} onChange={(event) => updateCertification(entry.id, 'issuer', event.target.value)} placeholder="Google" />
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <Input value={entry.issueDate} onChange={(event) => updateCertification(entry.id, 'issueDate', event.target.value)} placeholder="Jun 2024" />
+                            <Input value={entry.credentialUrl} onChange={(event) => updateCertification(entry.id, 'credentialUrl', event.target.value)} placeholder="https://credential.example.com" />
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="space-y-4 rounded-[1.5rem] border border-border/60 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-lg font-semibold text-foreground">Claimed skills</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">List the skills you want ProofMesh to compare against your actual proof history.</p>
+                      </div>
+                      <Button type="button" variant="outline" onClick={() => setForm((current) => ({ ...current, claimedSkills: [...current.claimedSkills, createClaimedSkill()] }))}>
+                        <Plus className="size-4" />
+                        Add skill
+                      </Button>
+                    </div>
+                    {form.claimedSkills.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No claimed skills added yet.</p>
+                    ) : (
+                      form.claimedSkills.map((entry) => (
+                        <div key={entry.id} className="flex gap-3 rounded-2xl border border-border/60 bg-background/40 p-4">
+                          <Input value={entry.name} onChange={(event) => updateClaimedSkill(entry.id, event.target.value)} placeholder="product strategy" />
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setForm((current) => ({ ...current, claimedSkills: current.claimedSkills.filter((item) => item.id !== entry.id) }))}>
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   <Button type="submit" className="w-full gap-2" disabled={isSaving}>
