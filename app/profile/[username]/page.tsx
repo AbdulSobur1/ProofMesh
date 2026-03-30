@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { use } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Award, BriefcaseBusiness, Check, Clock3, Code2, GraduationCap, MapPin, PencilLine, ShieldCheck, Trophy, User, UserPlus, X, Zap } from 'lucide-react'
+import { ArrowRight, Award, BriefcaseBusiness, Check, Clock3, Code2, GraduationCap, Mail, MapPin, PencilLine, ShieldCheck, Trophy, User, UserPlus, X, Zap } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { ProofCard } from '@/components/proof-card'
@@ -221,10 +221,18 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   </Button>
                 ) : null}
                 {!isOwnProfile && data?.viewerConnection.status === 'connected' && data.viewerConnection.connectionId ? (
-                  <Button variant="outline" onClick={() => runNetworkAction({ method: 'DELETE', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}` })} disabled={isNetworkActionLoading}>
-                    <Check className="size-4" />
-                    Connected
-                  </Button>
+                  <>
+                    <Button asChild>
+                      <Link href={`/messages?user=${encodeURIComponent(username)}`}>
+                        <Mail className="size-4" />
+                        Message
+                      </Link>
+                    </Button>
+                    <Button variant="outline" onClick={() => runNetworkAction({ method: 'DELETE', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}` })} disabled={isNetworkActionLoading}>
+                      <Check className="size-4" />
+                      Connected
+                    </Button>
+                  </>
                 ) : null}
                 <Button asChild>
                   <Link href="/submit" className="gap-2">

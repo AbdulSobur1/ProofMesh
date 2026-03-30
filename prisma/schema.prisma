@@ -29,6 +29,8 @@ model User {
   claimedSkills       ClaimedSkill[]
   sentConnections     Connection[]     @relation("ConnectionRequester")
   receivedConnections Connection[]     @relation("ConnectionRecipient")
+  conversationMemberships ConversationParticipant[]
+  sentMessages        Message[]
   savedCandidates     SavedCandidate[] @relation("RecruiterSavedCandidates")
   candidateShortlists SavedCandidate[] @relation("CandidateSavedByRecruiters")
   jobs                JobPost[]
@@ -48,6 +50,43 @@ model Connection {
   @@index([requesterId, status])
   @@index([recipientId, status])
   @@index([createdAt])
+}
+
+model Conversation {
+  id              String                    @id @default(cuid())
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  lastMessageAt   DateTime?
+  participants    ConversationParticipant[]
+  messages        Message[]
+
+  @@index([lastMessageAt])
+}
+
+model ConversationParticipant {
+  id              String        @id @default(cuid())
+  joinedAt        DateTime      @default(now())
+  lastReadAt      DateTime?
+  conversationId  String
+  userId          String
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id              String        @id @default(cuid())
+  body            String
+  createdAt       DateTime      @default(now())
+  conversationId  String
+  senderId        String
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender          User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId, createdAt])
 }
 
 model WorkExperience {

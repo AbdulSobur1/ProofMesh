@@ -191,6 +191,42 @@ export type ProfileConnectionState = {
   connectionId: string | null
 }
 
+export type ConversationParticipantPreview = {
+  id: string
+  username: string
+  displayName: string | null
+  headline: string | null
+  avatarUrl: string | null
+  currentRole: string | null
+  currentCompany: string | null
+}
+
+export type MessageRecord = {
+  id: string
+  body: string
+  createdAt: string
+  senderId: string
+}
+
+export type ConversationRecord = {
+  id: string
+  createdAt: string
+  updatedAt: string
+  lastMessageAt: string | null
+  participants: ConversationParticipantPreview[]
+  latestMessage: MessageRecord | null
+  unreadCount: number
+}
+
+export type InboxResponse = {
+  conversations: ConversationRecord[]
+}
+
+export type ConversationThreadResponse = {
+  conversation: ConversationRecord
+  messages: MessageRecord[]
+}
+
 export type EditWorkExperienceInput = {
   id: string
   title: string

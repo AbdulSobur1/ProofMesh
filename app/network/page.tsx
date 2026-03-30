@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Check, Users, X } from 'lucide-react'
+import { Check, Mail, Users, X } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -116,10 +116,18 @@ export default function NetworkPage() {
             ) : null}
 
             {mode === 'connected' ? (
-              <Button variant="outline" onClick={() => actOnConnection(connection.id, 'DELETE')} disabled={actingConnectionId === connection.id}>
-                <X className="size-4" />
-                Remove connection
-              </Button>
+              <>
+                <Button asChild>
+                  <Link href={`/messages?user=${encodeURIComponent(displayUser.username)}`}>
+                    <Mail className="size-4" />
+                    Message
+                  </Link>
+                </Button>
+                <Button variant="outline" onClick={() => actOnConnection(connection.id, 'DELETE')} disabled={actingConnectionId === connection.id}>
+                  <X className="size-4" />
+                  Remove connection
+                </Button>
+              </>
             ) : null}
           </div>
         </div>
