@@ -16,6 +16,7 @@ model User {
   proofs              Proof[]
   savedCandidates     SavedCandidate[] @relation("RecruiterSavedCandidates")
   candidateShortlists SavedCandidate[] @relation("CandidateSavedByRecruiters")
+  jobs                JobPost[]
 }
 
 model Proof {
@@ -72,5 +73,23 @@ model SavedCandidate {
   @@unique([recruiterId, candidateId])
   @@index([recruiterId])
   @@index([candidateId])
+  @@index([createdAt])
+}
+
+model JobPost {
+  id                  String   @id @default(cuid())
+  title               String
+  description         String
+  profession          String
+  targetTags          String   @default("[]")
+  preferredProofTypes String   @default("[]")
+  minScore            Float    @default(7)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  recruiterId         String
+  recruiter           User     @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+
+  @@index([recruiterId])
+  @@index([profession])
   @@index([createdAt])
 }

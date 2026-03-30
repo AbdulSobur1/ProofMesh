@@ -134,3 +134,23 @@ export type RoleMatchResponse = {
   matches: RoleMatch[]
 }
 
+export type JobPost = {
+  id: string
+  title: string
+  description: string
+  profession: string
+  targetTags: string[]
+  preferredProofTypes: string[]
+  minScore: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type JobPostsResponse = {
+  jobs: JobPost[]
+}
+
+export type JobMatchResponse = {
+  job: JobPost
+  matches: RoleMatch[]
+}

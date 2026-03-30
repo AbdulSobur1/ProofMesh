@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, BookmarkCheck, CheckSquare, Compass, Plus, Target, User } from 'lucide-react'
+import { BarChart3, BookmarkCheck, BriefcaseBusiness, CheckSquare, Compass, Plus, Target, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useProofs } from '@/lib/proof-context'
 
@@ -31,6 +31,11 @@ export function Sidebar() {
       href: '/discover/match',
       label: 'Role Matching',
       icon: Target,
+    },
+    {
+      href: '/discover/jobs',
+      label: 'Custom Jobs',
+      icon: BriefcaseBusiness,
     },
     {
       href: '/submit',
@@ -84,7 +89,7 @@ export function Sidebar() {
       <div className="p-4">
         <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Status</p>
-          <p className="mt-2 text-sm text-foreground/80">Discovery, shortlist, and role-matching workflows are now live.</p>
+          <p className="mt-2 text-sm text-foreground/80">Discovery, shortlist, role matching, and custom job workflows are now live.</p>
         </div>
       </div>
     </aside>

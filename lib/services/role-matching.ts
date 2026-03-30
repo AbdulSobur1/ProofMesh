@@ -1,15 +1,21 @@
 import { ROLE_PROFILES, type RoleSlug } from '@/lib/role-taxonomy'
-import { DiscoveryCandidate, RoleMatch } from '@/lib/types'
+import { DiscoveryCandidate, JobPost, RoleMatch } from '@/lib/types'
 
-export const buildRoleMatches = (roleSlug: RoleSlug, candidates: DiscoveryCandidate[]): RoleMatch[] => {
-  const role = ROLE_PROFILES[roleSlug]
-
+const buildMatches = (
+  config: {
+    profession: string
+    targetTags: string[]
+    preferredProofTypes: string[]
+    minScore: number
+  },
+  candidates: DiscoveryCandidate[]
+): RoleMatch[] => {
   return candidates
     .map((candidate) => {
-      const matchedTags = role.targetTags.filter((tag) => candidate.topTags.includes(tag))
-      const matchedProofTypes = role.preferredProofTypes.filter((proofType) => candidate.proofTypes.includes(proofType))
+      const matchedTags = config.targetTags.filter((tag) => candidate.topTags.includes(tag))
+      const matchedProofTypes = config.preferredProofTypes.filter((proofType) => candidate.proofTypes.includes(proofType))
 
-      const professionScore = candidate.primaryProfession === role.profession ? 24 : 0
+      const professionScore = candidate.primaryProfession === config.profession ? 24 : 0
       const skillTagScore = Math.min(28, matchedTags.length * 7)
       const proofTypeScore = Math.min(14, matchedProofTypes.length * 7)
       const trustScore = Math.min(18, Math.round(candidate.reputation.averageConfidence / 6) + candidate.reputation.verifiedProofs * 2)
@@ -31,6 +37,14 @@ export const buildRoleMatches = (roleSlug: RoleSlug, candidates: DiscoveryCandid
         },
       }
     })
-    .filter((match) => match.candidate.reputation.averageScore >= role.minScore)
+    .filter((match) => match.candidate.reputation.averageScore >= config.minScore)
     .sort((a, b) => b.matchScore - a.matchScore || b.candidate.reputation.averageConfidence - a.candidate.reputation.averageConfidence)
 }
+
+export const buildRoleMatches = (roleSlug: RoleSlug, candidates: DiscoveryCandidate[]): RoleMatch[] => {
+  const role = ROLE_PROFILES[roleSlug]
+  return buildMatches(role, candidates)
+}
+
+export const buildJobMatches = (job: JobPost, candidates: DiscoveryCandidate[]): RoleMatch[] =>
+  buildMatches(job, candidates)
