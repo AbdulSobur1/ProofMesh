@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Mail, Paperclip, Search, Send } from 'lucide-react'
+import { ArrowLeft, Mail, Paperclip, Search, Send } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -48,6 +48,7 @@ function MessagesPageContent() {
   const [isLoadingThread, setIsLoadingThread] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showMobileThread, setShowMobileThread] = useState(false)
 
   const loadInbox = useCallback(async () => {
     setIsLoadingInbox(true)
@@ -80,6 +81,7 @@ function MessagesPageContent() {
 
     if (existingConversation) {
       setSelectedConversationId(existingConversation.id)
+      setShowMobileThread(true)
     }
   }, [conversations, targetUsername])
 
@@ -109,6 +111,12 @@ function MessagesPageContent() {
     }
 
     loadThread()
+  }, [selectedConversationId])
+
+  useEffect(() => {
+    if (!selectedConversationId) {
+      setShowMobileThread(false)
+    }
   }, [selectedConversationId])
 
   const selectedConversation = useMemo(
@@ -207,6 +215,7 @@ function MessagesPageContent() {
       setNewConversationProofId('')
       await loadInbox()
       setSelectedConversationId(payload.conversation.id)
+      setShowMobileThread(true)
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : 'Failed to start conversation')
     } finally {
@@ -290,7 +299,7 @@ function MessagesPageContent() {
           ) : null}
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-            <Card className="rounded-[2rem] border border-border/60 p-4">
+            <Card className={`rounded-[2rem] border border-border/60 p-4 ${showMobileThread ? 'hidden lg:flex' : ''}`}>
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-foreground">Inbox</h2>
                 <span className="text-sm text-muted-foreground">{isLoadingInbox ? '...' : conversations.length}</span>
@@ -336,7 +345,10 @@ function MessagesPageContent() {
                       <button
                         key={conversation.id}
                         type="button"
-                        onClick={() => setSelectedConversationId(conversation.id)}
+                        onClick={() => {
+                          setSelectedConversationId(conversation.id)
+                          setShowMobileThread(true)
+                        }}
                         className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
                           selectedConversationId === conversation.id
                             ? 'border-primary/30 bg-primary/10'
@@ -368,7 +380,7 @@ function MessagesPageContent() {
               )}
             </Card>
 
-            <Card className="rounded-[2rem] border border-border/60 p-6">
+            <Card className={`rounded-[2rem] border border-border/60 p-4 sm:p-6 ${!showMobileThread ? 'hidden lg:flex' : ''}`}>
               {!selectedConversationId ? (
                 <div className="flex h-full min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-border/60 text-center text-sm text-muted-foreground">
                   Select a conversation to read messages.
@@ -383,7 +395,13 @@ function MessagesPageContent() {
                 <div className="flex min-h-[520px] flex-col">
                   <div className="border-b border-border/60 pb-4">
                     <div className="flex items-center justify-between gap-3">
-                      <div>
+                      <div className="min-w-0">
+                        <div className="mb-3 lg:hidden">
+                          <Button variant="ghost" size="sm" onClick={() => setShowMobileThread(false)} className="px-0">
+                            <ArrowLeft className="size-4" />
+                            Back to inbox
+                          </Button>
+                        </div>
                         <h2 className="text-xl font-semibold text-foreground">
                           {selectedOtherUser?.displayName || selectedOtherUser?.username || 'Conversation'}
                         </h2>
@@ -392,14 +410,14 @@ function MessagesPageContent() {
                         </p>
                       </div>
                       {selectedOtherUser?.username ? (
-                        <Button asChild variant="outline">
+                        <Button asChild variant="outline" size="sm" className="shrink-0">
                           <Link href={`/profile/${encodeURIComponent(selectedOtherUser.username)}`}>View profile</Link>
                         </Button>
                       ) : null}
                     </div>
                   </div>
 
-                  <div className="flex-1 space-y-4 py-6">
+                  <div className="flex-1 space-y-4 overflow-y-auto py-6">
                     {thread.messages.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No messages yet.</p>
                     ) : (
@@ -408,7 +426,7 @@ function MessagesPageContent() {
                         return (
                           <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
                             <div
-                              className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-6 ${
+                              className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 sm:max-w-[75%] ${
                                 isOwn
                                   ? 'bg-primary text-primary-foreground'
                                   : 'border border-border/60 bg-background/70 text-foreground'
@@ -475,7 +493,7 @@ function MessagesPageContent() {
                           Attaching proof: <span className="font-medium text-foreground">{attachedProof.title}</span>
                         </div>
                       ) : null}
-                      <div className="flex gap-3">
+                      <div className="flex flex-col gap-3 sm:flex-row">
                         <Input
                           value={draft}
                           onChange={(event) => setDraft(event.target.value)}
@@ -487,7 +505,7 @@ function MessagesPageContent() {
                             }
                           }}
                         />
-                        <Button onClick={sendMessage} disabled={isSending || !draft.trim()}>
+                        <Button onClick={sendMessage} disabled={isSending || !draft.trim()} className="sm:self-auto">
                           <Send className="size-4" />
                           Send
                         </Button>
