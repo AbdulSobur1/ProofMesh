@@ -7,6 +7,7 @@ import { useProofs } from '@/lib/proof-context'
 
 export function TopBar() {
   const { currentUser, signOut } = useProofs()
+  const identityLabel = currentUser?.displayName?.trim() || currentUser?.username
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/75 backdrop-blur">
@@ -25,8 +26,10 @@ export function TopBar() {
           {currentUser ? (
             <>
               <div className="hidden sm:block text-right">
-                <div className="text-sm font-medium">{currentUser.username}</div>
-                <div className="text-xs text-muted-foreground">Signed in</div>
+                <div className="text-sm font-medium">{identityLabel}</div>
+                <div className="text-xs text-muted-foreground">
+                  {currentUser.currentRole || 'Signed in'}
+                </div>
               </div>
               <Button variant="outline" size="sm" onClick={signOut} className="gap-2">
                 <LogOut className="size-4" />

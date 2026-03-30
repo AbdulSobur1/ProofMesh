@@ -12,6 +12,15 @@ model User {
   id                  String           @id @default(cuid())
   username            String           @unique
   passwordHash        String
+  displayName         String?
+  headline            String?
+  bio                 String?
+  location            String?
+  websiteUrl          String?
+  avatarUrl           String?
+  currentRole         String?
+  currentCompany      String?
+  yearsExperience     Int?
   createdAt           DateTime         @default(now())
   proofs              Proof[]
   savedCandidates     SavedCandidate[] @relation("RecruiterSavedCandidates")

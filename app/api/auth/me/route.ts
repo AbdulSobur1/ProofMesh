@@ -9,6 +9,28 @@ import { SESSION_COOKIE } from '@/lib/auth'
 import { verifySessionToken } from '@/lib/services/session'
 
 export async function GET(request: Request) {
+  const toSessionUser = (user: {
+    id: string
+    username: string
+    displayName: string | null
+    headline: string | null
+    location: string | null
+    avatarUrl: string | null
+    currentRole: string | null
+    currentCompany: string | null
+    createdAt: Date
+  }) => ({
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    headline: user.headline,
+    location: user.location,
+    avatarUrl: user.avatarUrl,
+    currentRole: user.currentRole,
+    currentCompany: user.currentCompany,
+    createdAt: user.createdAt.toISOString(),
+  })
+
   const token = await getCurrentToken(request)
 
   if (token?.sub) {
@@ -18,11 +40,7 @@ export async function GET(request: Request) {
 
     if (user) {
       return NextResponse.json({
-        user: {
-          id: user.id,
-          username: user.username,
-          createdAt: user.createdAt.toISOString(),
-        },
+        user: toSessionUser(user),
       })
     }
   }
@@ -44,11 +62,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    user: {
-      id: legacyUser.id,
-      username: legacyUser.username,
-      createdAt: legacyUser.createdAt.toISOString(),
-    },
+    user: toSessionUser(legacyUser),
   })
 }
 

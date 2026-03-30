@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { use } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Code2, ShieldCheck, Trophy, User, Zap } from 'lucide-react'
+import { ArrowRight, BriefcaseBusiness, Code2, MapPin, PencilLine, ShieldCheck, Trophy, User, Zap } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { ProofCard } from '@/components/proof-card'
@@ -17,6 +17,7 @@ import { ProfileResponse, Reputation, ProofSortMode } from '@/lib/types'
 import { filterProofs, getTimeline, sortProofs } from '@/lib/services/proof-analytics'
 import { ProofControls } from '@/components/dashboard/proof-controls'
 import { ReputationChart } from '@/components/dashboard/reputation-chart'
+import { useProofs } from '@/lib/proof-context'
 
 interface ProfilePageProps {
   params: Promise<{
@@ -25,9 +26,9 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ params }: ProfilePageProps) {
+  const { currentUser } = useProofs()
   const resolvedParams = use(params)
   const username = decodeURIComponent(resolvedParams.username)
-  const displayName = username.replace('-', ' ')
   const [data, setData] = useState<ProfileResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -84,6 +85,14 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
   const tier = getTier(reputation.averageScore)
   const TierIcon = tier.icon
+  const profileUser = data?.user
+  const profileName = profileUser?.displayName?.trim() || username.replace('-', ' ')
+  const profileSubtitle =
+    profileUser?.headline?.trim() ||
+    [profileUser?.currentRole, profileUser?.currentCompany].filter(Boolean).join(' at ') ||
+    'Public reputation profile'
+  const isOwnProfile = currentUser?.username === username
+  const profileInitial = (profileName[0] ?? username[0] ?? 'P').toUpperCase()
 
   return (
     <div className="min-h-screen bg-background">
@@ -105,19 +114,41 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     Verified public profile
                   </div>
                   <h1 className="mt-4 text-4xl font-semibold tracking-tight capitalize text-foreground sm:text-5xl">
-                    {displayName}
+                    {profileName}
                   </h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                    {profileSubtitle}
+                  </p>
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5">
                       <TierIcon className="size-4 text-primary" />
                       <span className="text-sm font-medium text-foreground">{tier.label} level</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">Public reputation profile</span>
+                    {profileUser?.location ? (
+                      <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-sm text-muted-foreground">
+                        <MapPin className="size-4 text-primary" />
+                        {profileUser.location}
+                      </div>
+                    ) : null}
+                    {profileUser?.currentRole || profileUser?.currentCompany ? (
+                      <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-sm text-muted-foreground">
+                        <BriefcaseBusiness className="size-4 text-primary" />
+                        {[profileUser?.currentRole, profileUser?.currentCompany].filter(Boolean).join(' at ')}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-3">
+                {isOwnProfile ? (
+                  <Button asChild variant="outline">
+                    <Link href="/profile/edit" className="gap-2">
+                      <PencilLine className="size-4" />
+                      Edit profile
+                    </Link>
+                  </Button>
+                ) : null}
                 <Button asChild>
                   <Link href="/submit" className="gap-2">
                     Submit proof
@@ -143,6 +174,37 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <Card className="rounded-[2rem] border-border/60 p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex size-20 shrink-0 items-center justify-center rounded-[1.5rem] border border-border/60 bg-background/70 text-2xl font-semibold text-primary shadow-sm">
+                  {profileInitial}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-semibold text-foreground">Professional snapshot</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    {profileUser?.bio?.trim() || 'This profile has proof and reputation data, but the richer professional summary has not been filled out yet.'}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {profileUser?.yearsExperience ? (
+                      <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                        {profileUser.yearsExperience}+ years experience
+                      </Badge>
+                    ) : null}
+                    {profileUser?.websiteUrl ? (
+                      <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                        <a href={profileUser.websiteUrl} target="_blank" rel="noreferrer">
+                          Personal website
+                        </a>
+                      </Badge>
+                    ) : null}
+                    <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                      @{username}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
             <Card className="rounded-[2rem] border-border/60 p-6">
               <div className="flex items-center justify-between">
                 <div>

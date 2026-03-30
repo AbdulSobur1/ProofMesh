@@ -51,9 +51,33 @@ export type Proof = {
   userId?: string
 }
 
+export type ProfessionalProfile = {
+  id: string
+  username: string
+  displayName: string | null
+  headline: string | null
+  bio: string | null
+  location: string | null
+  websiteUrl: string | null
+  avatarUrl: string | null
+  currentRole: string | null
+  currentCompany: string | null
+  yearsExperience: number | null
+  createdAt: string
+}
+
 export type ProfileUser = {
   id: string
   username: string
+  displayName: string | null
+  headline: string | null
+  bio: string | null
+  location: string | null
+  websiteUrl: string | null
+  avatarUrl: string | null
+  currentRole: string | null
+  currentCompany: string | null
+  yearsExperience: number | null
   createdAt: string
 } | null
 
@@ -72,6 +96,12 @@ export type ProofDetailResponse = {
 export type SessionUser = {
   id: string
   username: string
+  displayName: string | null
+  headline: string | null
+  location: string | null
+  avatarUrl: string | null
+  currentRole: string | null
+  currentCompany: string | null
   createdAt: string
   email?: string | null
   walletAddress?: string | null
@@ -79,6 +109,18 @@ export type SessionUser = {
 
 export type MeResponse = {
   user: SessionUser | null
+}
+
+export type UpdateProfileInput = {
+  displayName: string
+  headline: string
+  bio: string
+  location: string
+  websiteUrl: string
+  avatarUrl: string
+  currentRole: string
+  currentCompany: string
+  yearsExperience: string
 }
 
 export type ProofSortMode = 'newest' | 'oldest' | 'highest' | 'lowest'

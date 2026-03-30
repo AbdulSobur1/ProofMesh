@@ -109,7 +109,20 @@ export async function GET(
   const reputation = calculateReputation(proofDtos)
 
   return NextResponse.json({
-    user: { id: user.id, username: user.username, createdAt: user.createdAt.toISOString() },
+    user: {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      headline: user.headline,
+      bio: user.bio,
+      location: user.location,
+      websiteUrl: user.websiteUrl,
+      avatarUrl: user.avatarUrl,
+      currentRole: user.currentRole,
+      currentCompany: user.currentCompany,
+      yearsExperience: user.yearsExperience,
+      createdAt: user.createdAt.toISOString(),
+    },
     proofs: proofDtos,
     reputation,
   })
