@@ -4,6 +4,8 @@ import { calculateReputation } from '@/lib/services/reputation'
 import { PeerVerification, Proof } from '@/lib/types'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
+import { emptyNetworkCounts, resolveProfileConnectionState } from '@/lib/services/network'
+import { getCurrentToken } from '@/lib/auth-options'
 
 const toEndorsement = (endorsement: {
   id: string
@@ -131,10 +133,12 @@ const toClaimedSkill = (entry: {
 })
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { username: string } }
 ) {
   const username = decodeURIComponent(params.username)
+  const token = await getCurrentToken(request)
+  const viewerUserId = token?.sub ?? null
 
   const user = await prisma.user.findUnique({
     where: { username },
@@ -171,6 +175,11 @@ export async function GET(
     certifications: [],
     claimedSkills: [],
     provenSkills: [],
+    networkCounts: emptyNetworkCounts,
+    viewerConnection: {
+      status: 'none',
+      connectionId: null,
+    },
     })
   }
 
@@ -186,6 +195,42 @@ export async function GET(
 
   const proofDtos = proofs.map(toProof)
   const reputation = calculateReputation(proofDtos)
+  const [acceptedCount, incomingPendingCount, outgoingPendingCount, viewerConnection] = await Promise.all([
+    prisma.connection.count({
+      where: {
+        status: 'accepted',
+        OR: [{ requesterId: user.id }, { recipientId: user.id }],
+      },
+    }),
+    prisma.connection.count({
+      where: {
+        recipientId: user.id,
+        status: 'pending',
+      },
+    }),
+    prisma.connection.count({
+      where: {
+        requesterId: user.id,
+        status: 'pending',
+      },
+    }),
+    viewerUserId && viewerUserId !== user.id
+      ? prisma.connection.findFirst({
+          where: {
+            OR: [
+              { requesterId: viewerUserId, recipientId: user.id },
+              { requesterId: user.id, recipientId: viewerUserId },
+            ],
+          },
+          select: {
+            id: true,
+            status: true,
+            requesterId: true,
+            recipientId: true,
+          },
+        })
+      : Promise.resolve(null),
+  ])
 
   return NextResponse.json({
     user: {
@@ -209,5 +254,11 @@ export async function GET(
     certifications: user.certifications.map(toCertification),
     claimedSkills: user.claimedSkills.map(toClaimedSkill),
     provenSkills: reputation.tagFrequency,
+    networkCounts: {
+      totalConnections: acceptedCount,
+      incomingRequests: incomingPendingCount,
+      outgoingRequests: outgoingPendingCount,
+    },
+    viewerConnection: resolveProfileConnectionState(viewerUserId, user.id, viewerConnection),
   })
 }

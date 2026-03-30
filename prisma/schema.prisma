@@ -27,9 +27,27 @@ model User {
   educations          Education[]
   certifications      Certification[]
   claimedSkills       ClaimedSkill[]
+  sentConnections     Connection[]     @relation("ConnectionRequester")
+  receivedConnections Connection[]     @relation("ConnectionRecipient")
   savedCandidates     SavedCandidate[] @relation("RecruiterSavedCandidates")
   candidateShortlists SavedCandidate[] @relation("CandidateSavedByRecruiters")
   jobs                JobPost[]
+}
+
+model Connection {
+  id           String   @id @default(cuid())
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  respondedAt  DateTime?
+  requesterId  String
+  recipientId  String
+  requester    User     @relation("ConnectionRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  recipient    User     @relation("ConnectionRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, recipientId])
+  @@index([requesterId, status])
+  @@index([recipientId, status])
+  @@index([createdAt])
 }
 
 model WorkExperience {

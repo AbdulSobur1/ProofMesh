@@ -124,6 +124,8 @@ export type ProfileResponse = {
   certifications: CertificationEntry[]
   claimedSkills: ClaimedSkill[]
   provenSkills: TagFrequency[]
+  networkCounts: NetworkCounts
+  viewerConnection: ProfileConnectionState
 }
 
 export type ProofDetailResponse = {
@@ -148,6 +150,45 @@ export type SessionUser = {
 
 export type MeResponse = {
   user: SessionUser | null
+}
+
+export type ConnectionStatus = 'none' | 'pending_incoming' | 'pending_outgoing' | 'connected'
+
+export type ConnectionPreviewUser = {
+  id: string
+  username: string
+  displayName: string | null
+  headline: string | null
+  avatarUrl: string | null
+  currentRole: string | null
+  currentCompany: string | null
+}
+
+export type ConnectionRecord = {
+  id: string
+  status: 'pending' | 'accepted'
+  createdAt: string
+  respondedAt: string | null
+  requester: ConnectionPreviewUser
+  recipient: ConnectionPreviewUser
+}
+
+export type NetworkCounts = {
+  totalConnections: number
+  incomingRequests: number
+  outgoingRequests: number
+}
+
+export type NetworkResponse = {
+  incomingRequests: ConnectionRecord[]
+  outgoingRequests: ConnectionRecord[]
+  connections: ConnectionRecord[]
+  counts: NetworkCounts
+}
+
+export type ProfileConnectionState = {
+  status: ConnectionStatus
+  connectionId: string | null
 }
 
 export type EditWorkExperienceInput = {

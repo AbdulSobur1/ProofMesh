@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { use } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Award, BriefcaseBusiness, Code2, GraduationCap, MapPin, PencilLine, ShieldCheck, Trophy, User, Zap } from 'lucide-react'
+import { ArrowRight, Award, BriefcaseBusiness, Check, Clock3, Code2, GraduationCap, MapPin, PencilLine, ShieldCheck, Trophy, User, UserPlus, X, Zap } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { ProofCard } from '@/components/proof-card'
@@ -36,6 +36,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [selectedTag, setSelectedTag] = useState('all')
   const [minScore, setMinScore] = useState(0)
   const [sortMode, setSortMode] = useState<ProofSortMode>('newest')
+  const [networkActionError, setNetworkActionError] = useState<string | null>(null)
+  const [isNetworkActionLoading, setIsNetworkActionLoading] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -104,6 +106,37 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   )
   const unmatchedClaimedSkills = claimedSkills.filter((entry) => !matchedClaimedSkills.some((match) => match.id === entry.id))
 
+  const runNetworkAction = async (input: {
+    method: 'POST' | 'PATCH' | 'DELETE'
+    url: string
+    body?: Record<string, unknown>
+  }) => {
+    setIsNetworkActionLoading(true)
+    setNetworkActionError(null)
+    try {
+      const response = await fetch(input.url, {
+        method: input.method,
+        headers: input.body ? { 'Content-Type': 'application/json' } : undefined,
+        body: input.body ? JSON.stringify(input.body) : undefined,
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to update connection')
+      }
+
+      const refreshed = await fetch(`/api/profile/${encodeURIComponent(username)}`, { cache: 'no-store' })
+      if (!refreshed.ok) {
+        throw new Error('Failed to refresh profile')
+      }
+      setData((await refreshed.json()) as ProfileResponse)
+    } catch (actionError) {
+      setNetworkActionError(actionError instanceof Error ? actionError.message : 'Failed to update connection')
+    } finally {
+      setIsNetworkActionLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
@@ -146,6 +179,10 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                         {[profileUser?.currentRole, profileUser?.currentCompany].filter(Boolean).join(' at ')}
                       </div>
                     ) : null}
+                    <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-sm text-muted-foreground">
+                      <UserPlus className="size-4 text-primary" />
+                      {data?.networkCounts.totalConnections ?? 0} connection{(data?.networkCounts.totalConnections ?? 0) === 1 ? '' : 's'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -157,6 +194,36 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                       <PencilLine className="size-4" />
                       Edit profile
                     </Link>
+                  </Button>
+                ) : null}
+                {!isOwnProfile && data?.viewerConnection.status === 'none' ? (
+                  <Button onClick={() => runNetworkAction({ method: 'POST', url: '/api/network', body: { targetUsername: username } })} disabled={isNetworkActionLoading}>
+                    <UserPlus className="size-4" />
+                    Connect
+                  </Button>
+                ) : null}
+                {!isOwnProfile && data?.viewerConnection.status === 'pending_incoming' && data.viewerConnection.connectionId ? (
+                  <>
+                    <Button onClick={() => runNetworkAction({ method: 'PATCH', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}`, body: { action: 'accept' } })} disabled={isNetworkActionLoading}>
+                      <Check className="size-4" />
+                      Accept request
+                    </Button>
+                    <Button variant="outline" onClick={() => runNetworkAction({ method: 'PATCH', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}`, body: { action: 'decline' } })} disabled={isNetworkActionLoading}>
+                      <X className="size-4" />
+                      Decline
+                    </Button>
+                  </>
+                ) : null}
+                {!isOwnProfile && data?.viewerConnection.status === 'pending_outgoing' && data.viewerConnection.connectionId ? (
+                  <Button variant="outline" onClick={() => runNetworkAction({ method: 'PATCH', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}`, body: { action: 'cancel' } })} disabled={isNetworkActionLoading}>
+                    <Clock3 className="size-4" />
+                    Request sent
+                  </Button>
+                ) : null}
+                {!isOwnProfile && data?.viewerConnection.status === 'connected' && data.viewerConnection.connectionId ? (
+                  <Button variant="outline" onClick={() => runNetworkAction({ method: 'DELETE', url: `/api/network/${encodeURIComponent(data.viewerConnection.connectionId!)}` })} disabled={isNetworkActionLoading}>
+                    <Check className="size-4" />
+                    Connected
                   </Button>
                 ) : null}
                 <Button asChild>
@@ -213,6 +280,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   </div>
                 </div>
               </div>
+              {networkActionError ? (
+                <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  {networkActionError}
+                </div>
+              ) : null}
             </Card>
 
             <Card className="rounded-[2rem] border-border/60 p-6">
