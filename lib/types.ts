@@ -96,6 +96,8 @@ export type DiscoveryCandidate = {
     title: string
     score: number
   } | null
+  isSaved: boolean
+  savedAt: string | null
 }
 
 export type DiscoveryResponse = {

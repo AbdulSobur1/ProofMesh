@@ -5,6 +5,7 @@ import { getPrimaryProfession, getStrongestProof } from '@/lib/services/discover
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
 import { DiscoveryCandidate, DiscoveryResponse, PeerVerification, Proof } from '@/lib/types'
+import { getCurrentToken } from '@/lib/auth-options'
 
 const toEndorsement = (endorsement: {
   id: string
@@ -71,7 +72,10 @@ const toProof = (proof: {
   createdAt: proof.createdAt.toISOString(),
 })
 
-export async function GET() {
+export async function GET(request: Request) {
+  const token = await getCurrentToken(request)
+  const recruiterId = token?.sub
+
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
@@ -83,6 +87,14 @@ export async function GET() {
           },
         },
       },
+      candidateShortlists: recruiterId
+        ? {
+            where: {
+              recruiterId,
+            },
+            take: 1,
+          }
+        : false,
     },
   })
 
@@ -90,6 +102,9 @@ export async function GET() {
     .map((user) => {
       const proofs = user.proofs.map(toProof)
       const reputation = calculateReputation(proofs)
+      const shortlistRecord = Array.isArray((user as any).candidateShortlists)
+        ? (user as any).candidateShortlists[0] ?? null
+        : null
 
       return {
         id: user.id,
@@ -99,6 +114,8 @@ export async function GET() {
         reputation,
         topTags: reputation.tagFrequency.slice(0, 4).map((item) => item.tag),
         strongestProof: getStrongestProof(proofs),
+        isSaved: Boolean(shortlistRecord),
+        savedAt: shortlistRecord?.createdAt?.toISOString() ?? null,
       }
     })
     .filter((candidate) => candidate.reputation.totalProofs > 0)

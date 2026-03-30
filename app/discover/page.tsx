@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, SearchCheck, Users } from 'lucide-react'
+import { ArrowRight, BookmarkCheck, SearchCheck, Users } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CandidateCard } from '@/components/discovery/candidate-card'
 import { DiscoveryControls } from '@/components/discovery/discovery-controls'
-import { DiscoveryResponse, DiscoverySortMode } from '@/lib/types'
+import { DiscoveryCandidate, DiscoveryResponse, DiscoverySortMode } from '@/lib/types'
 import { filterCandidates, sortCandidates } from '@/lib/services/discovery'
 
 export default function DiscoverPage() {
@@ -23,27 +23,28 @@ export default function DiscoverPage() {
   const [minScore, setMinScore] = useState(0)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [sortMode, setSortMode] = useState<DiscoverySortMode>('trust')
+  const [savingCandidateId, setSavingCandidateId] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/discovery', { cache: 'no-store' })
+      if (!response.ok) {
+        throw new Error('Failed to load discovery data')
+      }
+      const payload = (await response.json()) as DiscoveryResponse
+      setData(payload)
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Something went wrong')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    const load = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const response = await fetch('/api/discovery', { cache: 'no-store' })
-        if (!response.ok) {
-          throw new Error('Failed to load discovery data')
-        }
-        const payload = (await response.json()) as DiscoveryResponse
-        setData(payload)
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : 'Something went wrong')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     load()
-  }, [])
+  }, [load])
 
   const candidates = useMemo(() => data?.candidates ?? [], [data])
   const filteredCandidates = useMemo(
@@ -57,11 +58,49 @@ export default function DiscoverPage() {
         acc.candidates += 1
         acc.proofs += candidate.reputation.totalProofs
         acc.endorsements += candidate.reputation.endorsementCount
+        acc.saved += candidate.isSaved ? 1 : 0
         return acc
       },
-      { candidates: 0, proofs: 0, endorsements: 0 }
+      { candidates: 0, proofs: 0, endorsements: 0, saved: 0 }
     )
   }, [candidates])
+
+  const toggleSave = async (candidate: DiscoveryCandidate) => {
+    setSavingCandidateId(candidate.id)
+    try {
+      const response = await fetch('/api/discovery/saved', {
+        method: candidate.isSaved ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ candidateId: candidate.id }),
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to update shortlist')
+      }
+
+      setData((prev) => {
+        if (!prev) return prev
+        return {
+          candidates: prev.candidates.map((entry) =>
+            entry.id === candidate.id
+              ? {
+                  ...entry,
+                  isSaved: !candidate.isSaved,
+                  savedAt: candidate.isSaved ? null : new Date().toISOString(),
+                }
+              : entry
+          ),
+        }
+      })
+    } catch (toggleError) {
+      setError(toggleError instanceof Error ? toggleError.message : 'Failed to update shortlist')
+    } finally {
+      setSavingCandidateId(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -87,6 +126,12 @@ export default function DiscoverPage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
+                <Button asChild variant="outline">
+                  <Link href="/discover/saved" className="gap-2">
+                    <BookmarkCheck className="size-4" />
+                    Open shortlist
+                  </Link>
+                </Button>
                 <Button asChild>
                   <Link href="/submit" className="gap-2">
                     Submit proof
@@ -97,7 +142,7 @@ export default function DiscoverPage() {
             </div>
           </section>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="mt-6 grid gap-4 md:grid-cols-4">
             <Card className="rounded-[2rem] border border-border/60 p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Candidates</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-foreground">{isLoading ? '—' : totals.candidates}</p>
@@ -112,6 +157,11 @@ export default function DiscoverPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">External notes</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-foreground">{isLoading ? '—' : totals.endorsements}</p>
               <p className="mt-2 text-sm text-muted-foreground">Peer, client, and manager verifications attached.</p>
+            </Card>
+            <Card className="rounded-[2rem] border border-border/60 p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Shortlisted</p>
+              <p className="mt-3 text-4xl font-semibold tracking-tight text-foreground">{isLoading ? '—' : totals.saved}</p>
+              <p className="mt-2 text-sm text-muted-foreground">Candidates you’ve saved for follow-up.</p>
             </Card>
           </div>
 
@@ -159,7 +209,12 @@ export default function DiscoverPage() {
             ) : (
               <div className="grid gap-4">
                 {filteredCandidates.map((candidate) => (
-                  <CandidateCard key={candidate.id} candidate={candidate} />
+                  <CandidateCard
+                    key={candidate.id}
+                    candidate={candidate}
+                    onToggleSave={toggleSave}
+                    isSaving={savingCandidateId === candidate.id}
+                  />
                 ))}
               </div>
             )}

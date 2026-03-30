@@ -9,11 +9,13 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  proofs       Proof[]
+  id                  String           @id @default(cuid())
+  username            String           @unique
+  passwordHash        String
+  createdAt           DateTime         @default(now())
+  proofs              Proof[]
+  savedCandidates     SavedCandidate[] @relation("RecruiterSavedCandidates")
+  candidateShortlists SavedCandidate[] @relation("CandidateSavedByRecruiters")
 }
 
 model Proof {
@@ -56,5 +58,19 @@ model ProofEndorsement {
 
   @@index([proofId])
   @@index([relationship])
+  @@index([createdAt])
+}
+
+model SavedCandidate {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  recruiterId String
+  candidateId String
+  recruiter   User     @relation("RecruiterSavedCandidates", fields: [recruiterId], references: [id], onDelete: Cascade)
+  candidate   User     @relation("CandidateSavedByRecruiters", fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([recruiterId, candidateId])
+  @@index([recruiterId])
+  @@index([candidateId])
   @@index([createdAt])
 }
