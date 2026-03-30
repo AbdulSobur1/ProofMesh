@@ -16,9 +16,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ notifications: [], unreadCount: 0 }, { status: 401 })
   }
 
+  const { searchParams } = new URL(request.url)
+  const status = searchParams.get('status')
+  const type = searchParams.get('type')
+
+  const where = {
+    userId: currentUserId,
+    ...(status === 'unread' ? { readAt: null } : {}),
+    ...(status === 'read' ? { NOT: { readAt: null } } : {}),
+    ...(type && type !== 'all' ? { type } : {}),
+  }
+
   const [notifications, unreadCount] = await Promise.all([
     prisma.notification.findMany({
-      where: { userId: currentUserId },
+      where,
       include: notificationInclude,
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -46,10 +57,14 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const body = (await request.json().catch(() => null)) as { ids?: string[] } | null
+  const ids = body?.ids?.filter(Boolean) ?? []
+
   await prisma.notification.updateMany({
     where: {
       userId: currentUserId,
       readAt: null,
+      ...(ids.length > 0 ? { id: { in: ids } } : {}),
     },
     data: {
       readAt: new Date(),

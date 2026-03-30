@@ -24,6 +24,11 @@ const formatDate = (value: string) =>
 export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
+  const [resultType, setResultType] = useState('all')
+  const [proofType, setProofType] = useState('')
+  const [sourceCategory, setSourceCategory] = useState('')
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
+  const [minConfidence, setMinConfidence] = useState(0)
   const [results, setResults] = useState<SearchResultsResponse | null>(null)
   const [savedSearches, setSavedSearches] = useState<SavedSearchRecord[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -63,7 +68,13 @@ export default function SearchPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`, { cache: 'no-store' })
+      const searchParams = new URLSearchParams({ q: trimmedQuery, resultType })
+      if (proofType) searchParams.set('proofType', proofType)
+      if (sourceCategory) searchParams.set('sourceCategory', sourceCategory)
+      if (verifiedOnly) searchParams.set('verifiedOnly', 'true')
+      if (minConfidence > 0) searchParams.set('minConfidence', String(minConfidence))
+
+      const response = await fetch(`/api/search?${searchParams.toString()}`, { cache: 'no-store' })
       if (!response.ok) {
         throw new Error('Failed to search')
       }
@@ -74,7 +85,7 @@ export default function SearchPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [minConfidence, proofType, resultType, sourceCategory, verifiedOnly])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -94,6 +105,11 @@ export default function SearchPage() {
   const proofs = useMemo(() => results?.proofs ?? [], [results])
   const skills = useMemo(() => results?.skills ?? [], [results])
   const resultCount = candidates.length + companies.length + jobs.length + proofs.length + skills.length
+  const proofTypeOptions = useMemo(() => {
+    const values = new Set<string>()
+    proofs.forEach((proof) => values.add(proof.proofType))
+    return Array.from(values).sort()
+  }, [proofs])
   const isSaved = useMemo(
     () => savedSearches.some((search) => search.query.toLowerCase() === submittedQuery.toLowerCase()),
     [savedSearches, submittedQuery]
@@ -165,6 +181,65 @@ export default function SearchPage() {
                   <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                     {isLoading ? 'Searching…' : `${resultCount} results`}
                   </Badge>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-[180px_180px_180px_160px_1fr]">
+                  <select
+                    value={resultType}
+                    onChange={(event) => setResultType(event.target.value)}
+                    className="h-11 rounded-xl border border-border/60 bg-background/80 px-3 text-sm text-foreground outline-none"
+                  >
+                    <option value="all">All results</option>
+                    <option value="people">People</option>
+                    <option value="companies">Companies</option>
+                    <option value="jobs">Jobs</option>
+                    <option value="proofs">Proofs</option>
+                    <option value="skills">Skills</option>
+                  </select>
+                  <select
+                    value={proofType}
+                    onChange={(event) => setProofType(event.target.value)}
+                    className="h-11 rounded-xl border border-border/60 bg-background/80 px-3 text-sm text-foreground outline-none"
+                  >
+                    <option value="">Any proof type</option>
+                    {proofTypeOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option.replaceAll('_', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={sourceCategory}
+                    onChange={(event) => setSourceCategory(event.target.value)}
+                    className="h-11 rounded-xl border border-border/60 bg-background/80 px-3 text-sm text-foreground outline-none"
+                  >
+                    <option value="">Any evidence type</option>
+                    <option value="general">General</option>
+                    <option value="github">GitHub</option>
+                    <option value="portfolio">Portfolio</option>
+                    <option value="case_study">Case study</option>
+                    <option value="document">Document</option>
+                    <option value="presentation">Presentation</option>
+                  </select>
+                  <select
+                    value={minConfidence}
+                    onChange={(event) => setMinConfidence(Number(event.target.value))}
+                    className="h-11 rounded-xl border border-border/60 bg-background/80 px-3 text-sm text-foreground outline-none"
+                  >
+                    <option value={0}>Any confidence</option>
+                    <option value={50}>50%+</option>
+                    <option value={65}>65%+</option>
+                    <option value={80}>80%+</option>
+                    <option value={90}>90%+</option>
+                  </select>
+                  <label className="flex h-11 items-center gap-3 rounded-xl border border-border/60 bg-background/80 px-4 text-sm text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={verifiedOnly}
+                      onChange={(event) => setVerifiedOnly(event.target.checked)}
+                      className="size-4 rounded border-border/60"
+                    />
+                    Verified confidence only
+                  </label>
                 </div>
               </div>
             </div>
@@ -332,6 +407,17 @@ export default function SearchPage() {
                             <p className="mt-2 text-sm text-muted-foreground">
                               {proof.owner.displayName || proof.owner.username} • {proof.score}/10 • {formatDate(proof.createdAt)}
                             </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                                {proof.sourceCategory.replaceAll('_', ' ')}
+                              </Badge>
+                              <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                                {proof.verificationConfidence}% confidence
+                              </Badge>
+                              <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                                {proof.endorsementCount} endorsement{proof.endorsementCount === 1 ? '' : 's'}
+                              </Badge>
+                            </div>
                             <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground">{proof.description}</p>
                             <div className="mt-3 flex flex-wrap gap-2">
                               {proof.tags.slice(0, 4).map((tag) => (

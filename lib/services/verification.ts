@@ -1,4 +1,5 @@
 import { type PeerVerification, type Proof } from '@/lib/types'
+import { getEndorsementWeight, normalizeTrustLevel } from '@/lib/services/trust'
 
 export type VerificationStatus = 'verified' | 'strong' | 'needs_review'
 export type VerificationStrength = 'low' | 'medium' | 'high'
@@ -63,7 +64,7 @@ export const evaluateVerification = (input: {
   evidenceCount?: number
   outcomeSummary?: string | null
   tags: string[]
-  endorsements?: Array<Pick<PeerVerification, 'relationship' | 'message' | 'verifierCompany'>>
+  endorsements?: Array<Pick<PeerVerification, 'relationship' | 'message' | 'verifierCompany' | 'verifiedReviewer' | 'reviewerTrustLevel'>>
 }): {
   status: VerificationStatus
   confidence: number
@@ -114,9 +115,24 @@ export const evaluateVerification = (input: {
     const normalizedRelationship = endorsement.relationship.toLowerCase()
     relationshipCounts.set(normalizedRelationship, (relationshipCounts.get(normalizedRelationship) ?? 0) + 1)
     confidence += relationshipBoosts[normalizedRelationship] ?? 6
+    confidence += Math.round((getEndorsementWeight({
+      verifiedReviewer: endorsement.verifiedReviewer,
+      reviewerTrustLevel: endorsement.reviewerTrustLevel,
+    }) - 1) * 6)
 
     if ((endorsement.message ?? '').trim().length >= 50) {
       confidence += 4
+    }
+
+    if (endorsement.verifiedReviewer) {
+      signals.push(signal('Identity-confirmed verifier', 'high'))
+    }
+
+    const reviewerTrustLevel = normalizeTrustLevel(endorsement.reviewerTrustLevel)
+    if (reviewerTrustLevel === 'verified') {
+      signals.push(signal('Verified reviewer trust level', 'high'))
+    } else if (reviewerTrustLevel === 'elevated') {
+      signals.push(signal('Elevated reviewer trust level', 'medium'))
     }
   })
 

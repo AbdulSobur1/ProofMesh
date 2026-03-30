@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ShieldAlert } from 'lucide-react'
+import { ShieldAlert, ShieldQuestion, UserRoundSearch } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -70,6 +70,25 @@ export default function ModerationPage() {
                 },
                 proof: item.proof ? { ...item.proof, moderationStatus: contentStatus ?? item.proof.moderationStatus } : item.proof,
                 post: item.post ? { ...item.post, moderationStatus: contentStatus ?? item.post.moderationStatus } : item.post,
+                actions: [
+                  {
+                    id: `${reportId}-${Date.now()}`,
+                    reportStatus,
+                    contentStatus: contentStatus ?? null,
+                    note: null,
+                    createdAt: new Date().toISOString(),
+                    admin: {
+                      id: currentUser?.id ?? 'admin',
+                      username: currentUser?.username ?? 'admin',
+                      displayName: currentUser?.displayName ?? null,
+                      headline: currentUser?.headline ?? null,
+                      avatarUrl: currentUser?.avatarUrl ?? null,
+                      currentRole: currentUser?.currentRole ?? null,
+                      currentCompany: currentUser?.currentCompany ?? null,
+                    },
+                  },
+                  ...item.actions,
+                ],
               }
             : item
         )
@@ -157,6 +176,36 @@ export default function ModerationPage() {
                             Reported by {item.report.reporter.displayName || item.report.reporter.username}
                           </p>
                           {item.report.details ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.report.details}</p> : null}
+                          {item.targetAccount ? (
+                            <div className="mt-4 rounded-2xl border border-border/60 bg-background/50 p-4">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                  <UserRoundSearch className="size-4 text-primary" />
+                                  Target account
+                                </div>
+                                <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                                  Risk score {item.targetAccount.suspiciousScore}/100
+                                </Badge>
+                                {item.targetAccount.isRepeatOffender ? (
+                                  <Badge className="bg-amber-500 text-black">Repeat offender</Badge>
+                                ) : null}
+                              </div>
+                              <p className="mt-3 text-sm font-semibold text-foreground">
+                                {item.targetAccount.displayName || item.targetAccount.username}
+                              </p>
+                              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                                  {item.targetAccount.reportCount} total reports
+                                </Badge>
+                                <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                                  {item.targetAccount.openReportCount} open reports
+                                </Badge>
+                                <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                                  {item.targetAccount.removedContentCount} removed items
+                                </Badge>
+                              </div>
+                            </div>
+                          ) : null}
                           {item.proof ? (
                             <div className="mt-4 rounded-2xl border border-border/60 bg-background/50 p-4">
                               <p className="text-sm font-semibold text-foreground">{item.proof.title}</p>
@@ -177,6 +226,25 @@ export default function ModerationPage() {
                             <div className="mt-4 rounded-2xl border border-border/60 bg-background/50 p-4">
                               <p className="text-sm font-semibold text-foreground">{item.post.author.displayName || item.post.author.username}</p>
                               <p className="mt-1 text-sm text-muted-foreground line-clamp-3">{item.post.body}</p>
+                            </div>
+                          ) : null}
+                          {item.actions.length > 0 ? (
+                            <div className="mt-4 rounded-2xl border border-border/60 bg-background/50 p-4">
+                              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                <ShieldQuestion className="size-4 text-primary" />
+                                Audit history
+                              </div>
+                              <div className="mt-3 space-y-2">
+                                {item.actions.slice(0, 3).map((action) => (
+                                  <div key={action.id} className="rounded-2xl border border-border/60 bg-background/60 p-3 text-xs text-muted-foreground">
+                                    <p className="font-medium text-foreground">
+                                      {action.admin.displayName || action.admin.username} set report to {action.reportStatus}
+                                      {action.contentStatus ? ` and content to ${action.contentStatus}` : ''}
+                                    </p>
+                                    <p className="mt-1">{new Date(action.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</p>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           ) : null}
                         </div>

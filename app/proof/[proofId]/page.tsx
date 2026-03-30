@@ -16,6 +16,7 @@ import {
   Sparkles,
   User,
   X,
+  CircleAlert,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -63,6 +64,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
   const [requestError, setRequestError] = useState<string | null>(null)
   const [requestSuccess, setRequestSuccess] = useState<string | null>(null)
   const [decliningRequestId, setDecliningRequestId] = useState<string | null>(null)
+  const [cancellingRequestId, setCancellingRequestId] = useState<string | null>(null)
   const [reportReason, setReportReason] = useState<'spam' | 'abuse' | 'fraud' | 'misleading' | 'copyright' | 'other'>('fraud')
   const [reportDetails, setReportDetails] = useState('')
   const [form, setForm] = useState({
@@ -83,6 +85,16 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
       setForm((prev) => ({ ...prev, verifierName: currentUser.username }))
     }
   }, [currentUser?.username, form.verifierName])
+
+  useEffect(() => {
+    const pendingRequest = data?.viewerEndorsementRequest
+    if (pendingRequest?.status === 'pending') {
+      setForm((prev) => ({
+        ...prev,
+        relationship: pendingRequest.relationship,
+      }))
+    }
+  }, [data?.viewerEndorsementRequest])
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -120,7 +132,15 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
         : 'border-white/10 bg-white/[0.04] text-foreground'
   const isOwnProof = currentUser?.username === data?.user?.username
   const viewerRequest = data?.viewerEndorsementRequest ?? null
-  const ownerRequests = data?.endorsementRequests ?? []
+  const ownerRequests = useMemo(() => data?.endorsementRequests ?? [], [data?.endorsementRequests])
+  const requestCounts = useMemo(
+    () => ({
+      pending: ownerRequests.filter((request) => request.status === 'pending').length,
+      completed: ownerRequests.filter((request) => request.status === 'completed').length,
+      declined: ownerRequests.filter((request) => request.status === 'declined').length,
+    }),
+    [ownerRequests]
+  )
 
   const relationshipLabel = useMemo(
     () => Object.fromEntries(RELATIONSHIP_OPTIONS.map((option) => [option.value, option.label])) as Record<PeerVerificationRelationship, string>,
@@ -252,6 +272,33 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
       setFormError(submitError instanceof Error ? submitError.message : 'Failed to decline request')
     } finally {
       setDecliningRequestId(null)
+    }
+  }
+
+  const handleCancelRequest = async (requestId: string) => {
+    setCancellingRequestId(requestId)
+    setRequestError(null)
+    setRequestSuccess(null)
+    try {
+      const response = await fetch(`/api/endorsement-requests/${encodeURIComponent(requestId)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'cancel' }),
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to cancel request')
+      }
+
+      setRequestSuccess('Pending verification request canceled.')
+      await load()
+    } catch (submitError) {
+      setRequestError(submitError instanceof Error ? submitError.message : 'Failed to cancel request')
+    } finally {
+      setCancellingRequestId(null)
     }
   }
 
@@ -687,6 +734,20 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                         {ownerRequests.length} total
                       </Badge>
                     </div>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Pending</p>
+                        <p className="mt-2 text-2xl font-semibold text-foreground">{requestCounts.pending}</p>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Completed</p>
+                        <p className="mt-2 text-2xl font-semibold text-emerald-300">{requestCounts.completed}</p>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Declined</p>
+                        <p className="mt-2 text-2xl font-semibold text-amber-300">{requestCounts.declined}</p>
+                      </div>
+                    </div>
                     <div className="mt-5 space-y-3">
                       {ownerRequests.map((request) => (
                         <div key={request.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -715,8 +776,30 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                               {request.message ? (
                                 <p className="mt-2 text-sm leading-6 text-foreground/85">{request.message}</p>
                               ) : null}
+                              {request.recipient.headline || request.recipient.currentRole || request.recipient.currentCompany ? (
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                  {request.recipient.headline || [request.recipient.currentRole, request.recipient.currentCompany].filter(Boolean).join(' at ')}
+                                </p>
+                              ) : null}
                             </div>
-                            <span className="text-xs text-muted-foreground">{formatDate(request.createdAt)}</span>
+                            <div className="text-right">
+                              <span className="text-xs text-muted-foreground">{formatDate(request.createdAt)}</span>
+                              {request.status === 'pending' ? (
+                                <div className="mt-3">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-white/10 bg-white/[0.04]"
+                                    onClick={() => handleCancelRequest(request.id)}
+                                    disabled={cancellingRequestId === request.id}
+                                  >
+                                    <X className="size-3.5" />
+                                    {cancellingRequestId === request.id ? 'Canceling...' : 'Cancel'}
+                                  </Button>
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -741,6 +824,13 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                     ) : null}
                     <div className="mt-4 flex gap-3">
                       <Button
+                        type="button"
+                        onClick={() => document.getElementById('verification-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                      >
+                        <ShieldCheck className="size-4" />
+                        Verify this proof
+                      </Button>
+                      <Button
                         variant="outline"
                         onClick={() => handleDeclineRequest(viewerRequest.id)}
                         disabled={decliningRequestId === viewerRequest.id}
@@ -753,7 +843,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                   </Card>
                 ) : null}
 
-                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
+                <Card id="verification-form-card" className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                     <MessageSquareQuote className="size-4 text-primary" />
                     Add Verification Note
@@ -763,6 +853,33 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                     These notes are attached directly to the proof and strengthen the trust signal for anyone reviewing the work.
                     {viewerRequest?.status === 'pending' ? ' Submitting one here will automatically complete the pending request.' : ''}
                   </p>
+
+                  <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary" className="border border-white/10 bg-white/[0.04] text-foreground">
+                        {currentUser ? 'Signed-in verifier' : 'Guest verifier'}
+                      </Badge>
+                      {currentUser?.trustLevel ? (
+                        <Badge variant="secondary" className="border border-white/10 bg-white/[0.04] text-foreground">
+                          {getTrustLabel(currentUser.trustLevel)}
+                        </Badge>
+                      ) : null}
+                      {currentUser?.identityVerifiedAt ? (
+                        <Badge variant="secondary" className="border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                          Identity confirmed
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                      Signed-in endorsements carry reviewer trust, and identity-confirmed reviewers contribute stronger verification signals.
+                    </p>
+                    {currentUser && !currentUser.identityVerifiedAt ? (
+                      <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                        <CircleAlert className="mt-0.5 size-4 shrink-0" />
+                        <span>Your endorsement will count, but identity-confirmed reviewers currently carry more verification weight.</span>
+                      </div>
+                    ) : null}
+                  </div>
 
                   <form className="mt-5 space-y-4" onSubmit={handleSubmitVerification}>
                     {formError ? (
@@ -778,6 +895,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                         onChange={(event) => setForm((prev) => ({ ...prev, verifierName: event.target.value }))}
                         placeholder="Jane Doe"
                         required
+                        disabled={Boolean(currentUser?.username)}
                       />
                     </div>
 

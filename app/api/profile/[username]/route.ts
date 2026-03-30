@@ -319,6 +319,7 @@ export async function GET(
       currentRole: profileUser.currentRole,
       currentCompany: profileUser.currentCompany,
       yearsExperience: profileUser.yearsExperience,
+      walletAddress: profileUser.walletAddress,
       createdAt: profileUser.createdAt.toISOString(),
     },
     proofs: proofDtos,

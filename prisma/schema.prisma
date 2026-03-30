@@ -23,6 +23,7 @@ model User {
   currentRole         String?
   currentCompany      String?
   yearsExperience     Int?
+  walletAddress       String?
   createdAt           DateTime         @default(now())
   proofs              Proof[]
   workExperiences     WorkExperience[]
@@ -55,6 +56,13 @@ model User {
   sentEndorsementRequests     ProofEndorsementRequest[] @relation("EndorsementRequestRequester")
   receivedEndorsementRequests ProofEndorsementRequest[] @relation("EndorsementRequestRecipient")
   savedJobs            SavedJob[]
+  notifyConnections    Boolean          @default(true)
+  notifyMessages       Boolean          @default(true)
+  notifyEndorsements   Boolean          @default(true)
+  notifySocial         Boolean          @default(true)
+  notifyJobs           Boolean          @default(true)
+  dailyDigestEnabled   Boolean          @default(false)
+  moderationActions    ModerationAction[] @relation("ModerationActionAdmin")
 }
 
 model Company {
@@ -235,10 +243,26 @@ model Report {
   resolvedAt DateTime?
   reporterId String
   reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  actions    ModerationAction[]
 
   @@index([targetType, targetId, status])
   @@index([reporterId, createdAt])
   @@index([status, createdAt])
+}
+
+model ModerationAction {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  reportStatus  String
+  contentStatus String?
+  note          String?
+  reportId      String
+  adminId       String
+  report        Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  admin         User     @relation("ModerationActionAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([reportId, createdAt])
+  @@index([adminId, createdAt])
 }
 
 model Post {

@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Mail, Paperclip, Send } from 'lucide-react'
+import { Mail, Paperclip, Search, Send } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -24,6 +24,14 @@ const formatTime = (value: string | null) =>
     : 'No messages yet'
 
 function MessagesPageContent() {
+  const outreachTemplates = useMemo(
+    () => [
+      'Hi, I came across your proof-backed profile and would love to connect about a role I think fits your work.',
+      'Your submitted proofs stood out. I would like to learn more about how you approach this kind of work.',
+      'I reviewed your profile and strongest proof. Are you open to a quick conversation this week?',
+    ],
+    []
+  )
   const searchParams = useSearchParams()
   const targetUsername = searchParams.get('user') ?? ''
   const { currentUser, proofs } = useProofs()
@@ -34,6 +42,8 @@ function MessagesPageContent() {
   const [newConversationMessage, setNewConversationMessage] = useState('')
   const [attachedProofId, setAttachedProofId] = useState('')
   const [newConversationProofId, setNewConversationProofId] = useState('')
+  const [inboxQuery, setInboxQuery] = useState('')
+  const [unreadOnly, setUnreadOnly] = useState(false)
   const [isLoadingInbox, setIsLoadingInbox] = useState(true)
   const [isLoadingThread, setIsLoadingThread] = useState(false)
   const [isSending, setIsSending] = useState(false)
@@ -105,9 +115,32 @@ function MessagesPageContent() {
     () => conversations.find((conversation) => conversation.id === selectedConversationId) ?? null,
     [conversations, selectedConversationId]
   )
+  const filteredConversations = useMemo(() => {
+    const normalizedQuery = inboxQuery.trim().toLowerCase()
+    return conversations.filter((conversation) => {
+      const otherUser = conversation.participants.find((participant) => participant.id !== currentUser?.id) ?? conversation.participants[0]
+      const matchesQuery =
+        !normalizedQuery ||
+        [otherUser?.displayName ?? '', otherUser?.username ?? '', conversation.latestMessage?.body ?? '']
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedQuery)
+
+      const matchesUnread = !unreadOnly || conversation.unreadCount > 0
+      return matchesQuery && matchesUnread
+    })
+  }, [conversations, currentUser?.id, inboxQuery, unreadOnly])
 
   const selectedOtherUser = selectedConversation?.participants.find((participant) => participant.id !== currentUser?.id) ?? null
   const selectableProofs = useMemo(() => proofs.slice(0, 12), [proofs])
+  const attachedProof = useMemo(
+    () => selectableProofs.find((proof) => proof.id === attachedProofId) ?? null,
+    [attachedProofId, selectableProofs]
+  )
+  const newConversationProof = useMemo(
+    () => selectableProofs.find((proof) => proof.id === newConversationProofId) ?? null,
+    [newConversationProofId, selectableProofs]
+  )
 
   const sendMessage = async () => {
     const trimmedDraft = draft.trim()
@@ -216,6 +249,19 @@ function MessagesPageContent() {
               <p className="mt-2 text-sm text-muted-foreground">
                 You can only send messages to accepted connections.
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {outreachTemplates.map((template) => (
+                  <Button
+                    key={template}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setNewConversationMessage(template)}
+                  >
+                    Use template
+                  </Button>
+                ))}
+              </div>
               <div className="mt-4 flex gap-3">
                 <Input value={newConversationMessage} onChange={(event) => setNewConversationMessage(event.target.value)} placeholder="Write your first message..." />
                 <select
@@ -235,6 +281,11 @@ function MessagesPageContent() {
                   Send
                 </Button>
               </div>
+              {newConversationProof ? (
+                <div className="mt-3 rounded-2xl border border-border/60 bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+                  Attaching proof: <span className="font-medium text-foreground">{newConversationProof.title}</span>
+                </div>
+              ) : null}
             </Card>
           ) : null}
 
@@ -244,19 +295,41 @@ function MessagesPageContent() {
                 <h2 className="text-lg font-semibold text-foreground">Inbox</h2>
                 <span className="text-sm text-muted-foreground">{isLoadingInbox ? '...' : conversations.length}</span>
               </div>
+              <div className="mb-4 space-y-3">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={inboxQuery}
+                    onChange={(event) => setInboxQuery(event.target.value)}
+                    placeholder="Search inbox"
+                    className="pl-9"
+                  />
+                </div>
+                <label className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/60 px-3 py-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={unreadOnly}
+                    onChange={(event) => setUnreadOnly(event.target.checked)}
+                    className="size-4 rounded border-border/60"
+                  />
+                  Show unread only
+                </label>
+              </div>
               {isLoadingInbox ? (
                 <div className="space-y-3">
                   {Array.from({ length: 4 }).map((_, index) => (
                     <Skeleton key={index} className="h-20 w-full rounded-2xl" />
                   ))}
                 </div>
-              ) : conversations.length === 0 ? (
+              ) : filteredConversations.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-border/60 p-6 text-sm text-muted-foreground">
-                  No conversations yet. Start from a connected user&apos;s profile or your network page.
+                  {conversations.length === 0
+                    ? 'No conversations yet. Start from a connected user\'s profile or your network page.'
+                    : 'No conversations match the current inbox filters.'}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {conversations.map((conversation) => {
+                  {filteredConversations.map((conversation) => {
                     const otherUser = conversation.participants.find((participant) => participant.id !== currentUser?.id) ?? conversation.participants[0]
 
                     return (
@@ -371,6 +444,19 @@ function MessagesPageContent() {
                   </div>
 
                   <div className="border-t border-border/60 pt-4">
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {outreachTemplates.map((template) => (
+                        <Button
+                          key={template}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDraft(template)}
+                        >
+                          Use template
+                        </Button>
+                      ))}
+                    </div>
                     <div className="space-y-3">
                       <select
                         value={attachedProofId}
@@ -384,6 +470,11 @@ function MessagesPageContent() {
                           </option>
                         ))}
                       </select>
+                      {attachedProof ? (
+                        <div className="rounded-2xl border border-border/60 bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+                          Attaching proof: <span className="font-medium text-foreground">{attachedProof.title}</span>
+                        </div>
+                      ) : null}
                       <div className="flex gap-3">
                         <Input
                           value={draft}

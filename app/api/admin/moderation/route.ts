@@ -4,8 +4,8 @@ import { getCurrentToken } from '@/lib/auth-options'
 import { isAdminUsername } from '@/lib/services/admin'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
-import { ModerationQueueResponse, PeerVerification, Proof } from '@/lib/types'
-import { getTrustWeight } from '@/lib/services/trust'
+import { ModerationQueueResponse, ModerationTargetAccount, PeerVerification, Proof } from '@/lib/types'
+import { getTrustWeight, normalizeTrustLevel } from '@/lib/services/trust'
 
 const reporterSelect = {
   id: true,
@@ -18,6 +18,11 @@ const reporterSelect = {
 } as const
 
 const authorSelect = reporterSelect
+const accountSelect = {
+  ...reporterSelect,
+  trustLevel: true,
+  identityVerifiedAt: true,
+} as const
 
 const toEndorsement = (endorsement: {
   id: string
@@ -114,6 +119,14 @@ export async function GET(request: Request) {
       reporter: {
         select: reporterSelect,
       },
+      actions: {
+        include: {
+          admin: {
+            select: reporterSelect,
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
     },
     orderBy: { createdAt: 'desc' },
     take: 50,
@@ -129,13 +142,16 @@ export async function GET(request: Request) {
         endorsements: {
           orderBy: { createdAt: 'desc' },
         },
+        user: {
+          select: accountSelect,
+        },
       },
     }),
     prisma.post.findMany({
       where: { id: { in: postIds } },
       include: {
         user: {
-          select: authorSelect,
+          select: accountSelect,
         },
         proof: {
           select: {
@@ -168,6 +184,7 @@ export async function GET(request: Request) {
   ])
 
   const proofMap = new Map(proofs.map((proof) => [proof.id, toProof(proof)]))
+  const proofOwnerMap = new Map(proofs.map((proof) => [proof.id, proof.user]))
   const postMap = new Map(
     posts.map((post) => [
       post.id,
@@ -193,6 +210,115 @@ export async function GET(request: Request) {
       },
     ])
   )
+  const postOwnerMap = new Map(posts.map((post) => [post.id, post.user]))
+
+  const targetUserIds = Array.from(
+    new Set(
+      reports
+        .map((report) => (report.targetType === 'proof' ? proofOwnerMap.get(report.targetId)?.id : postOwnerMap.get(report.targetId)?.id))
+        .filter((value): value is string => Boolean(value))
+    )
+  )
+
+  const [allTargetProofs, allTargetPosts] = await Promise.all([
+    prisma.proof.findMany({
+      where: {
+        userId: { in: targetUserIds },
+      },
+      select: {
+        id: true,
+        userId: true,
+        moderationStatus: true,
+        riskScore: true,
+      },
+    }),
+    prisma.post.findMany({
+      where: {
+        userId: { in: targetUserIds },
+      },
+      select: {
+        id: true,
+        userId: true,
+        moderationStatus: true,
+      },
+    }),
+  ])
+
+  const reportCountsByUser = new Map<string, { total: number; open: number }>()
+  for (const report of reports) {
+    const ownerId =
+      report.targetType === 'proof' ? proofOwnerMap.get(report.targetId)?.id : postOwnerMap.get(report.targetId)?.id
+
+    if (!ownerId) {
+      continue
+    }
+
+    const current = reportCountsByUser.get(ownerId) ?? { total: 0, open: 0 }
+    current.total += 1
+    if (report.status === 'open') {
+      current.open += 1
+    }
+    reportCountsByUser.set(ownerId, current)
+  }
+
+  const removedCountsByUser = new Map<string, number>()
+  const averageProofRiskByUser = new Map<string, { total: number; count: number }>()
+
+  for (const proof of allTargetProofs) {
+    if (proof.moderationStatus === 'removed') {
+      removedCountsByUser.set(proof.userId, (removedCountsByUser.get(proof.userId) ?? 0) + 1)
+    }
+    const currentRisk = averageProofRiskByUser.get(proof.userId) ?? { total: 0, count: 0 }
+    currentRisk.total += proof.riskScore
+    currentRisk.count += 1
+    averageProofRiskByUser.set(proof.userId, currentRisk)
+  }
+
+  for (const post of allTargetPosts) {
+    if (post.moderationStatus === 'removed') {
+      removedCountsByUser.set(post.userId, (removedCountsByUser.get(post.userId) ?? 0) + 1)
+    }
+  }
+
+  const buildTargetAccount = (
+    user: (typeof proofs)[number]['user'] | (typeof posts)[number]['user'] | undefined,
+    proofRiskScore?: number
+  ): ModerationTargetAccount | null => {
+    if (!user) {
+      return null
+    }
+
+    const reportCounts = reportCountsByUser.get(user.id) ?? { total: 0, open: 0 }
+    const removedContentCount = removedCountsByUser.get(user.id) ?? 0
+    const averageRisk = averageProofRiskByUser.get(user.id)
+    const baselineRisk = averageRisk && averageRisk.count > 0 ? averageRisk.total / averageRisk.count : 0
+    const suspiciousScore = Math.min(
+      100,
+      reportCounts.total * 14 +
+        reportCounts.open * 18 +
+        removedContentCount * 22 +
+        (normalizeTrustLevel(user.trustLevel) === 'standard' ? 8 : 0) +
+        (user.identityVerifiedAt ? 0 : 6) +
+        Math.round(Math.max(proofRiskScore ?? 0, baselineRisk) / 4)
+    )
+
+    return {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      headline: user.headline,
+      avatarUrl: user.avatarUrl,
+      currentRole: user.currentRole,
+      currentCompany: user.currentCompany,
+      trustLevel: user.trustLevel,
+      identityVerifiedAt: user.identityVerifiedAt?.toISOString() ?? null,
+      reportCount: reportCounts.total,
+      openReportCount: reportCounts.open,
+      removedContentCount,
+      suspiciousScore,
+      isRepeatOffender: reportCounts.total >= 2 || removedContentCount >= 1,
+    }
+  }
 
   const sortedReports = [...reports].sort((left, right) => {
     const trustDelta = getTrustWeight(right.reporterTrustLevel) - getTrustWeight(left.reporterTrustLevel)
@@ -219,6 +345,18 @@ export async function GET(request: Request) {
       },
       proof: report.targetType === 'proof' ? proofMap.get(report.targetId) ?? null : null,
       post: report.targetType === 'post' ? postMap.get(report.targetId) ?? null : null,
+      targetAccount:
+        report.targetType === 'proof'
+          ? buildTargetAccount(proofOwnerMap.get(report.targetId), proofMap.get(report.targetId)?.riskScore)
+          : buildTargetAccount(postOwnerMap.get(report.targetId)),
+      actions: report.actions.map((action) => ({
+        id: action.id,
+        reportStatus: action.reportStatus as 'open' | 'reviewed' | 'dismissed' | 'actioned',
+        contentStatus: (action.contentStatus as 'active' | 'under_review' | 'removed' | null) ?? null,
+        note: action.note,
+        createdAt: action.createdAt.toISOString(),
+        admin: action.admin,
+      })),
     })),
   }
 

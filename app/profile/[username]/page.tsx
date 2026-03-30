@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { use } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Award, BriefcaseBusiness, Check, Clock3, Code2, Eye, GraduationCap, Mail, MapPin, PencilLine, ShieldCheck, Trophy, User, UserPlus, X, Zap } from 'lucide-react'
+import { ArrowRight, Award, BriefcaseBusiness, Check, Clock3, Code2, Copy, Download, Eye, GraduationCap, Mail, MapPin, PencilLine, ShieldCheck, Trophy, User, UserPlus, X, Zap } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { ProofCard } from '@/components/proof-card'
@@ -39,6 +39,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [sortMode, setSortMode] = useState<ProofSortMode>('newest')
   const [networkActionError, setNetworkActionError] = useState<string | null>(null)
   const [isNetworkActionLoading, setIsNetworkActionLoading] = useState(false)
+  const [shareState, setShareState] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -101,6 +102,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     'Public reputation profile'
   const isOwnProfile = currentUser?.username === username
   const profileInitial = (profileName[0] ?? username[0] ?? 'P').toUpperCase()
+  const shortenedWallet = profileUser?.walletAddress
+    ? `${profileUser.walletAddress.slice(0, 6)}...${profileUser.walletAddress.slice(-4)}`
+    : null
   const claimedSkillSet = new Set(claimedSkills.map((entry) => entry.name.trim().toLowerCase()))
   const matchedClaimedSkills = claimedSkills.filter((entry) =>
     provenSkills.some((tag) => tag.tag.trim().toLowerCase() === entry.name.trim().toLowerCase())
@@ -144,6 +148,39 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       setNetworkActionError(actionError instanceof Error ? actionError.message : 'Failed to update connection')
     } finally {
       setIsNetworkActionLoading(false)
+    }
+  }
+
+  const profileUrl = typeof window !== 'undefined' ? window.location.href : `/profile/${encodeURIComponent(username)}`
+
+  const copyProfileLink = async () => {
+    try {
+      await navigator.clipboard.writeText(profileUrl)
+      setShareState('Profile link copied')
+    } catch {
+      setShareState('Could not copy link')
+    }
+  }
+
+  const downloadExport = async (format: 'json' | 'txt') => {
+    try {
+      const response = await fetch(`/api/profile/${encodeURIComponent(username)}/export?format=${format}`)
+      if (!response.ok) {
+        throw new Error('Failed to export profile')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${username}-reputation.${format === 'json' ? 'json' : 'txt'}`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      setShareState(format === 'json' ? 'JSON export downloaded' : 'Summary export downloaded')
+    } catch {
+      setShareState('Export failed')
     }
   }
 
@@ -204,6 +241,12 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                       <UserPlus className="size-4 text-primary" />
                       {data?.networkCounts.totalConnections ?? 0} connection{(data?.networkCounts.totalConnections ?? 0) === 1 ? '' : 's'}
                     </div>
+                    {shortenedWallet ? (
+                      <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-sm text-muted-foreground">
+                        <ShieldCheck className="size-4 text-primary" />
+                        Wallet {shortenedWallet}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -309,6 +352,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                       {trustLabel}
                     </Badge>
+                    {shortenedWallet ? (
+                      <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                        {shortenedWallet}
+                      </Badge>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -341,6 +389,65 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   ))}
                 </div>
               )}
+            </Card>
+
+            <Card className="rounded-[2rem] border-border/60 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Shareable reputation card</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">A compact public snapshot for recruiters, clients, and peers.</p>
+                </div>
+                <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                  Public
+                </Badge>
+              </div>
+              <div className="mt-5 rounded-[1.75rem] border border-border/60 bg-[linear-gradient(135deg,rgba(79,140,255,0.12),rgba(255,255,255,0.02))] p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-lg font-semibold text-foreground">{profileName}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{profileSubtitle}</p>
+                  </div>
+                  <Badge variant="secondary" className={trustBadgeClassName}>
+                    {trustLabel}
+                  </Badge>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-border/60 bg-background/60 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Score</p>
+                    <p className="mt-2 text-2xl font-semibold text-foreground">{reputation.averageScore.toFixed(1)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-background/60 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Verified proofs</p>
+                    <p className="mt-2 text-2xl font-semibold text-foreground">{reputation.verifiedProofs}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-background/60 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Endorsements</p>
+                    <p className="mt-2 text-2xl font-semibold text-foreground">{reputation.endorsementCount}</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {reputation.tagFrequency.slice(0, 5).map((tag) => (
+                    <Badge key={tag.tag} variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                      {tag.tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Button variant="outline" onClick={() => void copyProfileLink()}>
+                  <Copy className="size-4" />
+                  Copy profile link
+                </Button>
+                <Button variant="outline" onClick={() => void downloadExport('txt')}>
+                  <Download className="size-4" />
+                  Export summary
+                </Button>
+                <Button variant="outline" onClick={() => void downloadExport('json')}>
+                  <Download className="size-4" />
+                  Export JSON
+                </Button>
+              </div>
+              {shareState ? <p className="mt-3 text-xs text-muted-foreground">{shareState}</p> : null}
             </Card>
 
             <ReputationChart data={timeline} />

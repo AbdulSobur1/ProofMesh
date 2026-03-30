@@ -55,6 +55,7 @@ export default function CompanyPublicPage({ params }: CompanyPageProps) {
   const company = data?.company
   const jobs = data?.jobs ?? []
   const posts = data?.posts ?? []
+  const team = data?.team ?? []
 
   const toggleFollow = async () => {
     if (!company) return
@@ -185,6 +186,9 @@ export default function CompanyPublicPage({ params }: CompanyPageProps) {
                       <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
                         {data?.analytics.jobCount ?? 0} job{(data?.analytics.jobCount ?? 0) === 1 ? '' : 's'}
                       </Badge>
+                      <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                        {data?.analytics.memberCount ?? 0} team member{(data?.analytics.memberCount ?? 0) === 1 ? '' : 's'}
+                      </Badge>
                     </div>
                     {company.description ? (
                       <p className="mt-6 max-w-3xl text-sm leading-7 text-foreground/85">{company.description}</p>
@@ -249,6 +253,37 @@ export default function CompanyPublicPage({ params }: CompanyPageProps) {
                 </Card>
 
                 <div className="space-y-6">
+                  <Card className="rounded-[2rem] border border-border/60 p-6">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Users className="size-4 text-primary" />
+                      Team visibility
+                    </div>
+                    {team.length === 0 ? (
+                      <p className="mt-4 text-sm leading-6 text-muted-foreground">No public team members yet.</p>
+                    ) : (
+                      <div className="mt-4 space-y-3">
+                        {team.map((member) => (
+                          <div key={member.id} className="rounded-2xl border border-border/60 bg-background/50 p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-foreground">{member.user.displayName || member.user.username}</p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {member.user.headline || [member.user.currentRole, member.user.currentCompany].filter(Boolean).join(' at ') || `@${member.user.username}`}
+                                </p>
+                              </div>
+                              <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                                {member.role}
+                              </Badge>
+                            </div>
+                            <p className="mt-3 text-xs text-muted-foreground">
+                              Joined {new Date(member.joinedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+
                   {data?.viewerState.canManage ? (
                     <Card className="rounded-[2rem] border border-border/60 p-6">
                       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -280,6 +315,29 @@ export default function CompanyPublicPage({ params }: CompanyPageProps) {
                       <p>Over time this becomes the employer-side equivalent of a professional feed.</p>
                     </div>
                   </Card>
+
+                  {data?.privateAnalytics ? (
+                    <Card className="rounded-[2rem] border border-border/60 p-6">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        <Building2 className="size-4 text-primary" />
+                        Hiring snapshot
+                      </div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-2xl border border-border/60 bg-background/50 p-4">
+                          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Applications</p>
+                          <p className="mt-2 text-2xl font-semibold text-foreground">{data.privateAnalytics.totalApplications}</p>
+                        </div>
+                        <div className="rounded-2xl border border-border/60 bg-background/50 p-4">
+                          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Active</p>
+                          <p className="mt-2 text-2xl font-semibold text-foreground">{data.privateAnalytics.activeCandidates}</p>
+                        </div>
+                        <div className="rounded-2xl border border-border/60 bg-background/50 p-4">
+                          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Hired</p>
+                          <p className="mt-2 text-2xl font-semibold text-foreground">{data.privateAnalytics.hiredCandidates}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  ) : null}
                 </div>
               </div>
 

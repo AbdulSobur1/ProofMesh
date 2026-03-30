@@ -140,6 +140,8 @@ export async function POST(
         relationship: endorsement.relationship as PeerVerificationRelationship,
         message: endorsement.message,
         verifierCompany: endorsement.verifierCompany,
+        verifiedReviewer: endorsement.verifiedReviewer,
+        reviewerTrustLevel: endorsement.reviewerTrustLevel,
       })),
     })
 

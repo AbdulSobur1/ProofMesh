@@ -5,7 +5,7 @@ import { getCurrentToken } from '@/lib/auth-options'
 import { createNotification } from '@/lib/services/notifications'
 
 const updateRequestSchema = z.object({
-  action: z.enum(['decline']),
+  action: z.enum(['decline', 'cancel']),
 })
 
 export async function PATCH(
@@ -52,15 +52,15 @@ export async function PATCH(
       return NextResponse.json({ error: 'Request not found' }, { status: 404 })
     }
 
-    if (endorsementRequest.recipientId !== currentUserId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
     if (endorsementRequest.status !== 'pending') {
       return NextResponse.json({ error: 'This request has already been handled' }, { status: 400 })
     }
 
     if (input.action === 'decline') {
+      if (endorsementRequest.recipientId !== currentUserId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
       await prisma.proofEndorsementRequest.update({
         where: { id: endorsementRequest.id },
         data: {
@@ -76,6 +76,18 @@ export async function PATCH(
         title: 'Endorsement request declined',
         body: `@${endorsementRequest.recipient.username} declined your request to verify "${endorsementRequest.proof.title}".`,
         link: `/proof/${encodeURIComponent(endorsementRequest.proof.id)}`,
+      })
+
+      return NextResponse.json({ ok: true })
+    }
+
+    if (input.action === 'cancel') {
+      if (endorsementRequest.requesterId !== currentUserId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      await prisma.proofEndorsementRequest.delete({
+        where: { id: endorsementRequest.id },
       })
 
       return NextResponse.json({ ok: true })

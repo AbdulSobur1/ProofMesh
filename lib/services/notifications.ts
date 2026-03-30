@@ -1,4 +1,4 @@
-import { NotificationRecord, NotificationType } from '@/lib/types'
+import { NotificationCategory, NotificationRecord, NotificationType } from '@/lib/types'
 import { prisma } from '@/lib/db'
 
 export const notificationActorSelect = {
@@ -45,6 +45,45 @@ export const toNotificationRecord = (notification: {
   actor: notification.actor,
 })
 
+export const notificationCategoryByType: Record<NotificationType, NotificationCategory> = {
+  connection_request: 'connections',
+  connection_accepted: 'connections',
+  message_received: 'messages',
+  endorsement_requested: 'endorsements',
+  endorsement_request_completed: 'endorsements',
+  endorsement_request_declined: 'endorsements',
+  post_liked: 'social',
+  post_commented: 'social',
+  post_reposted: 'social',
+  job_application_submitted: 'jobs',
+  job_application_status: 'jobs',
+}
+
+export const notificationSettingsSelect = {
+  notifyConnections: true,
+  notifyMessages: true,
+  notifyEndorsements: true,
+  notifySocial: true,
+  notifyJobs: true,
+  dailyDigestEnabled: true,
+} as const
+
+export const toNotificationSettings = (user: {
+  notifyConnections: boolean
+  notifyMessages: boolean
+  notifyEndorsements: boolean
+  notifySocial: boolean
+  notifyJobs: boolean
+  dailyDigestEnabled: boolean
+}) => ({
+  connections: user.notifyConnections,
+  messages: user.notifyMessages,
+  endorsements: user.notifyEndorsements,
+  social: user.notifySocial,
+  jobs: user.notifyJobs,
+  dailyDigest: user.dailyDigestEnabled,
+})
+
 type CreateNotificationInput = {
   userId: string
   actorId?: string | null
@@ -56,6 +95,33 @@ type CreateNotificationInput = {
 
 export async function createNotification(input: CreateNotificationInput) {
   if (input.actorId && input.userId === input.actorId) {
+    return null
+  }
+
+  const recipient = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: {
+      notifyConnections: true,
+      notifyMessages: true,
+      notifyEndorsements: true,
+      notifySocial: true,
+      notifyJobs: true,
+    },
+  })
+
+  if (!recipient) {
+    return null
+  }
+
+  const category = notificationCategoryByType[input.type]
+  const isEnabled =
+    (category === 'connections' && recipient.notifyConnections) ||
+    (category === 'messages' && recipient.notifyMessages) ||
+    (category === 'endorsements' && recipient.notifyEndorsements) ||
+    (category === 'social' && recipient.notifySocial) ||
+    (category === 'jobs' && recipient.notifyJobs)
+
+  if (!isEnabled) {
     return null
   }
 

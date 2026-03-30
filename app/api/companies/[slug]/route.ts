@@ -74,15 +74,23 @@ export async function GET(
         },
         orderBy: { createdAt: 'desc' },
       },
-      followers: currentUserId
-        ? {
-            where: {
-              userId: currentUserId,
+      members: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              headline: true,
+              avatarUrl: true,
+              currentRole: true,
+              currentCompany: true,
             },
-            take: 1,
-          }
-        : false,
-      members: currentUserId
+          },
+        },
+        orderBy: { createdAt: 'asc' },
+      },
+      followers: currentUserId
         ? {
             where: {
               userId: currentUserId,
@@ -99,21 +107,25 @@ export async function GET(
         company: null,
         jobs: [],
         posts: [],
+        team: [],
         analytics: {
           followerCount: 0,
           jobCount: 0,
           postCount: 0,
+          memberCount: 0,
         },
         viewerState: {
           isFollowing: false,
           canManage: false,
+          membershipRole: null,
         },
+        privateAnalytics: null,
       },
       { status: 404 }
     )
   }
 
-  const [followerCount, memberCount, membership] = await Promise.all([
+  const [followerCount, memberCount, totalApplications, activeCandidates, hiredCandidates] = await Promise.all([
     prisma.companyFollow.count({
       where: {
         companyId: company.id,
@@ -124,16 +136,35 @@ export async function GET(
         companyId: company.id,
       },
     }),
-    currentUserId
-      ? prisma.companyMember.findFirst({
-          where: {
-            companyId: company.id,
-            userId: currentUserId,
-          },
-          select: { id: true, role: true },
-        })
-      : Promise.resolve(null),
+    prisma.jobApplication.count({
+      where: {
+        job: {
+          companyId: company.id,
+        },
+      },
+    }),
+    prisma.jobApplication.count({
+      where: {
+        job: {
+          companyId: company.id,
+        },
+        status: {
+          in: ['submitted', 'reviewing', 'shortlisted'],
+        },
+      },
+    }),
+    prisma.jobApplication.count({
+      where: {
+        job: {
+          companyId: company.id,
+        },
+        interviewStage: 'hired',
+      },
+    }),
   ])
+
+  const membership = currentUserId ? company.members.find((member) => member.user.id === currentUserId) ?? null : null
+  const canManage = Boolean(membership)
 
   const response: CompanyResponse = {
     company: toCompanyDto(company),
@@ -145,7 +176,12 @@ export async function GET(
       updatedAt: post.updatedAt.toISOString(),
       author: post.author,
     })),
-    team: [],
+    team: company.members.map((member) => ({
+      id: member.id,
+      role: member.role,
+      joinedAt: member.createdAt.toISOString(),
+      user: member.user,
+    })),
     analytics: {
       followerCount,
       jobCount: company.jobs.length,
@@ -154,9 +190,16 @@ export async function GET(
     },
     viewerState: {
       isFollowing: Array.isArray((company as { followers?: unknown[] }).followers) && ((company as { followers?: unknown[] }).followers?.length ?? 0) > 0,
-      canManage: Boolean(membership),
+      canManage,
       membershipRole: membership?.role ?? null,
     },
+    privateAnalytics: canManage
+      ? {
+          totalApplications,
+          activeCandidates,
+          hiredCandidates,
+        }
+      : null,
   }
 
   return NextResponse.json(response)

@@ -6,7 +6,30 @@ import { getPrimaryProfession, getStrongestProof } from '@/lib/services/discover
 import { parseStringArray, toJobPostDto } from '@/lib/services/jobs'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
-import { DiscoveryCandidate, type JobApplicationStatus, PeerVerification, Proof, SearchResultsResponse, SearchSkillResult } from '@/lib/types'
+import { DiscoveryCandidate, type JobApplicationStatus, PeerVerification, Proof, type SearchProofResult, SearchResultsResponse, SearchSkillResult } from '@/lib/types'
+
+const includesQuery = (values: Array<string | null | undefined>, query: string) =>
+  values
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+    .includes(query)
+
+const scoreQueryMatch = (values: Array<string | null | undefined>, query: string) => {
+  let score = 0
+  values.forEach((value) => {
+    const normalized = value?.toLowerCase().trim()
+    if (!normalized) return
+    if (normalized === query) {
+      score += 20
+    } else if (normalized.startsWith(query)) {
+      score += 12
+    } else if (normalized.includes(query)) {
+      score += 6
+    }
+  })
+  return score
+}
 
 const toEndorsement = (endorsement: {
   id: string
@@ -79,6 +102,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const rawQuery = (searchParams.get('q') ?? '').trim()
   const query = rawQuery.toLowerCase()
+  const resultType = searchParams.get('resultType') ?? 'all'
+  const proofTypeFilter = (searchParams.get('proofType') ?? '').trim().toLowerCase()
+  const sourceCategoryFilter = (searchParams.get('sourceCategory') ?? '').trim().toLowerCase()
+  const verifiedOnly = searchParams.get('verifiedOnly') === 'true'
+  const minConfidence = Number(searchParams.get('minConfidence') ?? '0')
 
   if (!query) {
     const empty: SearchResultsResponse = {
@@ -178,70 +206,83 @@ export async function GET(request: Request) {
         strongestProof: getStrongestProof(mappedProofs),
         isSaved: Boolean(shortlistRecord),
         savedAt: shortlistRecord?.createdAt?.toISOString() ?? null,
+        _matchScore:
+          scoreQueryMatch(
+            [
+              user.username,
+              getPrimaryProfession(mappedProofs) ?? '',
+              getStrongestProof(mappedProofs)?.title ?? '',
+              ...reputation.tagFrequency.slice(0, 4).map((item) => item.tag),
+            ],
+            query
+          ) +
+          Math.round(reputation.averageConfidence / 5) +
+          reputation.verifiedProofs * 2,
       }
     })
     .filter((candidate) => candidate.reputation.totalProofs > 0)
-    .filter((candidate) =>
-      [
-        candidate.username,
-        candidate.primaryProfession ?? '',
-        candidate.strongestProof?.title ?? '',
-        ...candidate.topTags,
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(query)
-    )
+    .filter((candidate) => includesQuery([candidate.username, candidate.primaryProfession ?? '', candidate.strongestProof?.title ?? '', ...candidate.topTags], query))
+    .sort((left, right) => (right as typeof left & { _matchScore: number })._matchScore - (left as typeof left & { _matchScore: number })._matchScore)
     .slice(0, 8)
+    .map(({ _matchScore: _ignored, ...candidate }) => candidate as DiscoveryCandidate)
 
   const companyResults = companies
-    .filter((company) =>
-      [company.name, company.tagline ?? '', company.description ?? '', company.industry ?? '', company.location ?? '']
-        .join(' ')
-        .toLowerCase()
-        .includes(query)
-    )
+    .filter((company) => includesQuery([company.name, company.tagline ?? '', company.description ?? '', company.industry ?? '', company.location ?? ''], query))
     .map((company) => ({
-      id: company.id,
-      slug: company.slug,
-      name: company.name,
-      tagline: company.tagline,
-      description: company.description,
-      websiteUrl: company.websiteUrl,
-      location: company.location,
-      logoUrl: company.logoUrl,
-      industry: company.industry,
-      createdAt: company.createdAt.toISOString(),
-      updatedAt: company.updatedAt.toISOString(),
+      company: {
+        id: company.id,
+        slug: company.slug,
+        name: company.name,
+        tagline: company.tagline,
+        description: company.description,
+        websiteUrl: company.websiteUrl,
+        location: company.location,
+        logoUrl: company.logoUrl,
+        industry: company.industry,
+        createdAt: company.createdAt.toISOString(),
+        updatedAt: company.updatedAt.toISOString(),
+      },
+      score:
+        scoreQueryMatch([company.name, company.tagline ?? '', company.industry ?? '', company.location ?? ''], query) +
+        (company.description?.toLowerCase().includes(query) ? 4 : 0),
     }))
+    .sort((left, right) => right.score - left.score)
     .slice(0, 8)
+    .map((entry) => entry.company)
 
   const jobResults = jobs
-    .filter((job) =>
-      [
-        job.title,
-        job.description,
-        job.profession,
-        ...(job.company ? [job.company.name, job.company.tagline ?? '', job.company.industry ?? ''] : []),
-        ...parseStringArray(job.targetTags),
-        ...parseStringArray(job.preferredProofTypes),
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(query)
-    )
+    .filter((job) => includesQuery([
+      job.title,
+      job.description,
+      job.profession,
+      ...(job.company ? [job.company.name, job.company.tagline ?? '', job.company.industry ?? ''] : []),
+      ...parseStringArray(job.targetTags),
+      ...parseStringArray(job.preferredProofTypes),
+    ], query))
     .map((job) => {
       const application = Array.isArray((job as { applications?: Array<{ status: string }> }).applications)
         ? (job as { applications?: Array<{ status: string }> }).applications?.[0] ?? null
         : null
 
       return {
-        ...toJobPostDto(job),
-        hasApplied: Boolean(application),
-        applicationStatus: (application?.status as JobApplicationStatus | undefined) ?? null,
+        job: {
+          ...toJobPostDto(job),
+          hasApplied: Boolean(application),
+          applicationStatus: (application?.status as JobApplicationStatus | undefined) ?? null,
+        },
+        score:
+          scoreQueryMatch([
+            job.title,
+            job.profession,
+            job.company?.name ?? '',
+            ...parseStringArray(job.targetTags),
+            ...parseStringArray(job.preferredProofTypes),
+          ], query) + Math.round(job.minScore),
       }
     })
+    .sort((left, right) => right.score - left.score)
     .slice(0, 8)
+    .map((entry) => entry.job)
 
   const proofResults = proofs
     .map((proof) => {
@@ -250,20 +291,35 @@ export async function GET(request: Request) {
         id: proof.id,
         title: proof.title,
         description: proof.description,
+        sourceCategory: (proof.sourceCategory ?? 'general') as Proof['sourceCategory'],
         profession: proof.profession,
         proofType: proof.proofType,
         score: proof.score,
         tags,
         verificationStatus: proof.verificationStatus,
         verificationConfidence: proof.verificationConfidence,
+        endorsementCount: proof.endorsements.length,
         createdAt: proof.createdAt.toISOString(),
         owner: proof.user,
         searchBlob: [proof.title, proof.description, proof.outcomeSummary ?? '', proof.profession, proof.proofType, ...tags].join(' ').toLowerCase(),
+        matchScore:
+          scoreQueryMatch([proof.title, proof.profession, proof.proofType, ...tags], query) +
+          Math.round(proof.verificationConfidence / 10) +
+          Math.round(proof.score) +
+          proof.endorsements.length * 2,
       }
     })
     .filter((proof) => proof.searchBlob.includes(query))
+    .filter((proof) => !proofTypeFilter || proof.proofType.toLowerCase() === proofTypeFilter)
+    .filter((proof) => !sourceCategoryFilter || (proof.sourceCategory ?? 'general').toLowerCase() === sourceCategoryFilter)
+    .filter((proof) => !verifiedOnly || proof.verificationStatus !== 'needs_review')
+    .filter((proof) => proof.verificationConfidence >= minConfidence)
+    .sort((left, right) => right.matchScore - left.matchScore)
     .slice(0, 8)
-    .map(({ searchBlob: _searchBlob, ...proof }) => proof)
+    .map(({ searchBlob: _searchBlob, matchScore: _matchScore, ...proof }) => ({
+      ...proof,
+      sourceCategory: proof.sourceCategory ?? 'general',
+    }) satisfies SearchProofResult)
 
   const skillMap = new Map<string, { proofCount: number; candidateIds: Set<string>; candidateNames: Set<string> }>()
   proofs.forEach((proof) => {
@@ -297,11 +353,11 @@ export async function GET(request: Request) {
 
   const response: SearchResultsResponse = {
     query: rawQuery,
-    candidates,
-    companies: companyResults,
-    jobs: jobResults,
-    proofs: proofResults,
-    skills,
+    candidates: resultType === 'all' || resultType === 'people' ? candidates : [],
+    companies: resultType === 'all' || resultType === 'companies' ? companyResults : [],
+    jobs: resultType === 'all' || resultType === 'jobs' ? jobResults : [],
+    proofs: resultType === 'all' || resultType === 'proofs' ? proofResults : [],
+    skills: resultType === 'all' || resultType === 'skills' ? skills : [],
   }
 
   return NextResponse.json(response)

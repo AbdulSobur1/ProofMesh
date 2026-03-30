@@ -49,6 +49,7 @@ const updateProfileSchema = z.object({
   currentRole: z.string().trim().max(80),
   currentCompany: z.string().trim().max(80),
   yearsExperience: z.string().trim().regex(/^\d{0,2}$/),
+  walletAddress: z.string().trim().regex(/^$|^0x[a-fA-F0-9]{40}$/),
   workExperiences: z.array(workExperienceSchema).max(12),
   educations: z.array(educationSchema).max(8),
   certifications: z.array(certificationSchema).max(12),
@@ -67,6 +68,7 @@ const toProfile = (user: {
   currentRole: string | null
   currentCompany: string | null
   yearsExperience: number | null
+  walletAddress: string | null
   createdAt: Date
 }) => ({
   id: user.id,
@@ -80,6 +82,7 @@ const toProfile = (user: {
   currentRole: user.currentRole,
   currentCompany: user.currentCompany,
   yearsExperience: user.yearsExperience,
+  walletAddress: user.walletAddress,
   createdAt: user.createdAt.toISOString(),
 })
 
@@ -209,6 +212,7 @@ export async function PATCH(request: Request) {
         currentRole: input.currentRole || null,
         currentCompany: input.currentCompany || null,
         yearsExperience: input.yearsExperience ? Number(input.yearsExperience) : null,
+        walletAddress: input.walletAddress || null,
         workExperiences: {
           deleteMany: {},
           create: input.workExperiences

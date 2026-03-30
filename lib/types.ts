@@ -81,6 +81,7 @@ export type ProfessionalProfile = {
   currentRole: string | null
   currentCompany: string | null
   yearsExperience: number | null
+  walletAddress?: string | null
   createdAt: string
 }
 
@@ -132,6 +133,7 @@ export type ProfileUser = {
   currentRole: string | null
   currentCompany: string | null
   yearsExperience: number | null
+  walletAddress?: string | null
   createdAt: string
 } | null
 
@@ -147,6 +149,39 @@ export type ProfileResponse = {
   networkCounts: NetworkCounts
   viewerConnection: ProfileConnectionState
   profileAnalytics: ProfileAnalytics
+}
+
+export type PublicReputationExport = {
+  profile: {
+    username: string
+    displayName: string | null
+    headline: string | null
+    location: string | null
+    currentRole: string | null
+    currentCompany: string | null
+    walletAddress?: string | null
+    trustLevel?: string
+    identityVerifiedAt?: string | null
+    createdAt: string
+  }
+  reputation: Reputation
+  topSkills: TagFrequency[]
+  highlights: {
+    strongestProofTitle: string | null
+    strongestProofScore: number | null
+    verifiedProofs: number
+    endorsementCount: number
+  }
+  proofs: Array<{
+    id: string
+    title: string
+    proofType: string
+    profession: string
+    score: number
+    verificationStatus: string
+    verificationConfidence: number
+    createdAt: string
+  }>
 }
 
 export type ProofDetailResponse = {
@@ -202,6 +237,8 @@ export type NotificationType =
   | 'job_application_submitted'
   | 'job_application_status'
 
+export type NotificationCategory = 'connections' | 'messages' | 'endorsements' | 'social' | 'jobs'
+
 export type NotificationActor = {
   id: string
   username: string
@@ -226,6 +263,19 @@ export type NotificationRecord = {
 export type NotificationsResponse = {
   notifications: NotificationRecord[]
   unreadCount: number
+}
+
+export type NotificationSettings = {
+  connections: boolean
+  messages: boolean
+  endorsements: boolean
+  social: boolean
+  jobs: boolean
+  dailyDigest: boolean
+}
+
+export type NotificationSettingsResponse = {
+  settings: NotificationSettings
 }
 
 export type ConnectionStatus = 'none' | 'pending_incoming' | 'pending_outgoing' | 'connected'
@@ -417,10 +467,38 @@ export type ModerationQueueItem = {
   report: ReportRecord
   proof: Proof | null
   post: FeedPost | null
+  targetAccount: ModerationTargetAccount | null
+  actions: ModerationActionRecord[]
 }
 
 export type ModerationQueueResponse = {
   items: ModerationQueueItem[]
+}
+
+export type ModerationActionRecord = {
+  id: string
+  reportStatus: ModerationStatus
+  contentStatus: 'active' | 'under_review' | 'removed' | null
+  note: string | null
+  createdAt: string
+  admin: ConnectionPreviewUser
+}
+
+export type ModerationTargetAccount = {
+  id: string
+  username: string
+  displayName: string | null
+  headline: string | null
+  avatarUrl: string | null
+  currentRole: string | null
+  currentCompany: string | null
+  trustLevel?: string
+  identityVerifiedAt?: string | null
+  reportCount: number
+  openReportCount: number
+  removedContentCount: number
+  suspiciousScore: number
+  isRepeatOffender: boolean
 }
 
 export type EditWorkExperienceInput = {
@@ -467,6 +545,7 @@ export type UpdateProfileInput = {
   currentRole: string
   currentCompany: string
   yearsExperience: string
+  walletAddress: string
   workExperiences: EditWorkExperienceInput[]
   educations: EditEducationInput[]
   certifications: EditCertificationInput[]
@@ -501,13 +580,14 @@ export type SearchProofResult = {
   id: string
   title: string
   description: string
-  sourceCategory?: ProofSourceCategory
+  sourceCategory: ProofSourceCategory
   profession: string
   proofType: string
   score: number
   tags: string[]
   verificationStatus: string
   verificationConfidence: number
+  endorsementCount: number
   createdAt: string
   owner: ConnectionPreviewUser
 }

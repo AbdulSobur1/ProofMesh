@@ -35,6 +35,7 @@ const emptyForm: UpdateProfileInput = {
   currentRole: '',
   currentCompany: '',
   yearsExperience: '',
+  walletAddress: '',
   workExperiences: [],
   educations: [],
   certifications: [],
@@ -154,6 +155,7 @@ export default function EditProfilePage() {
           currentRole: payload.user.currentRole ?? '',
           currentCompany: payload.user.currentCompany ?? '',
           yearsExperience: payload.user.yearsExperience?.toString() ?? '',
+          walletAddress: payload.user.walletAddress ?? '',
           workExperiences: payload.workExperiences.map((entry) => ({
             id: entry.id,
             title: entry.title,
@@ -328,6 +330,12 @@ export default function EditProfilePage() {
                   <div>
                     <label className="mb-2 block text-sm font-medium text-foreground">Years of experience</label>
                     <Input value={form.yearsExperience} onChange={(event) => updateField('yearsExperience', event.target.value.replace(/[^\d]/g, '').slice(0, 2))} placeholder="5" />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">Wallet address</label>
+                    <Input value={form.walletAddress} onChange={(event) => updateField('walletAddress', event.target.value.trim())} placeholder="0x1234...abcd" />
+                    <p className="mt-2 text-xs text-muted-foreground">Optional. This becomes a public credibility signal on your profile and exports.</p>
                   </div>
 
                   <div>

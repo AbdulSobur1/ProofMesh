@@ -7,6 +7,7 @@ import { isAdminUsername } from '@/lib/services/admin'
 const updateSchema = z.object({
   reportStatus: z.enum(['open', 'reviewed', 'dismissed', 'actioned']),
   contentStatus: z.enum(['active', 'under_review', 'removed']).optional(),
+  note: z.string().trim().max(500).optional(),
 })
 
 export async function PATCH(
@@ -59,6 +60,16 @@ export async function PATCH(
         data: { moderationStatus: input.contentStatus },
       })
     }
+
+    await prisma.moderationAction.create({
+      data: {
+        reportId: report.id,
+        adminId: token.sub,
+        reportStatus: input.reportStatus,
+        contentStatus: input.contentStatus ?? null,
+        note: input.note || null,
+      },
+    })
 
     return NextResponse.json({ ok: true })
   } catch (error) {
