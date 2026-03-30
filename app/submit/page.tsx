@@ -306,7 +306,7 @@ export default function SubmitProof() {
                     </div>
 
                     <div className="space-y-3 rounded-2xl border border-border/60 bg-background/40 p-4">
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <label className="block text-sm font-medium text-foreground">Supporting evidence links</label>
                           <p className="mt-1 text-xs text-muted-foreground">
@@ -329,19 +329,57 @@ export default function SubmitProof() {
 
                       <div className="space-y-3">
                         {evidenceItems.map((item, index) => (
-                          <div key={`evidence-${index}`} className="grid gap-3 rounded-2xl border border-border/60 bg-background/60 p-4 md:grid-cols-[1fr_1.4fr_160px_auto]">
-                            <Input
-                              value={item.label}
-                              onChange={(event) =>
-                                setEvidenceItems((current) =>
-                                  current.map((entry, entryIndex) =>
-                                    entryIndex === index ? { ...entry, label: event.target.value } : entry
+                          <div key={`evidence-${index}`} className="space-y-3 rounded-2xl border border-border/60 bg-background/60 p-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                Evidence link {index + 1}
+                              </p>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  setEvidenceItems((current) =>
+                                    current.length === 1 ? [{ label: '', url: '', type: 'repository' }] : current.filter((_, entryIndex) => entryIndex !== index)
                                   )
-                                )
-                              }
-                              placeholder="GitHub repo"
-                              disabled={isLoading}
-                            />
+                                }
+                                disabled={isLoading}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-[1fr_160px]">
+                              <Input
+                                value={item.label}
+                                onChange={(event) =>
+                                  setEvidenceItems((current) =>
+                                    current.map((entry, entryIndex) =>
+                                      entryIndex === index ? { ...entry, label: event.target.value } : entry
+                                    )
+                                  )
+                                }
+                                placeholder="GitHub repo"
+                                disabled={isLoading}
+                              />
+                              <select
+                                value={item.type}
+                                onChange={(event) =>
+                                  setEvidenceItems((current) =>
+                                    current.map((entry, entryIndex) =>
+                                      entryIndex === index ? { ...entry, type: event.target.value as ProofEvidenceItem['type'] } : entry
+                                    )
+                                  )
+                                }
+                                disabled={isLoading}
+                                className="h-11 w-full rounded-xl border border-input bg-card/70 px-4 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                              >
+                                {EVIDENCE_TYPE_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                             <Input
                               type="url"
                               value={item.url}
@@ -355,66 +393,37 @@ export default function SubmitProof() {
                               placeholder="https://github.com/..."
                               disabled={isLoading}
                             />
-                            <select
-                              value={item.type}
-                              onChange={(event) =>
-                                setEvidenceItems((current) =>
-                                  current.map((entry, entryIndex) =>
-                                    entryIndex === index ? { ...entry, type: event.target.value as ProofEvidenceItem['type'] } : entry
-                                  )
-                                )
-                              }
-                              disabled={isLoading}
-                              className="h-11 w-full rounded-xl border border-input bg-card/70 px-4 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                            >
-                              {EVIDENCE_TYPE_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() =>
-                                setEvidenceItems((current) =>
-                                  current.length === 1 ? [{ label: '', url: '', type: 'repository' }] : current.filter((_, entryIndex) => entryIndex !== index)
-                                )
-                              }
-                              disabled={isLoading}
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <div className="flex gap-3 pt-2">
-                      <Button type="submit" disabled={isLoading} size="lg" className="flex-1 gap-2 rounded-2xl">
-                        {isLoading ? (
-                          <>
-                            <Spinner className="size-4" />
-                            Analyzing...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="size-4" />
-                            Submit proof
-                          </>
-                        )}
-                      </Button>
-                      <Button type="button" variant="outline" size="lg" onClick={() => router.back()} disabled={isLoading} className="rounded-2xl">
-                        Cancel
-                      </Button>
+                    <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-10 -mx-2 rounded-[1.5rem] border border-border/60 bg-background/95 p-2 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
+                      <div className="flex flex-col gap-3 pt-0 sm:flex-row sm:pt-2">
+                        <Button type="submit" disabled={isLoading} size="lg" className="flex-1 gap-2 rounded-2xl">
+                          {isLoading ? (
+                            <>
+                              <Spinner className="size-4" />
+                              Analyzing...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="size-4" />
+                              Submit proof
+                            </>
+                          )}
+                        </Button>
+                        <Button type="button" variant="outline" size="lg" onClick={() => router.back()} disabled={isLoading} className="rounded-2xl sm:min-w-32">
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
                   </form>
                 </Card>
               )}
             </div>
 
-            <div className="space-y-6">
+            <div className="order-first space-y-6 lg:order-last">
               <Card className="rounded-[2rem] border border-border/60 p-6">
                 <div className="flex items-center gap-2">
                   <Lightbulb className="size-4 text-primary" />
