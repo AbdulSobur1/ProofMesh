@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Bell, BriefcaseBusiness, CheckCheck, Mail, MessageCircle, UserPlus } from 'lucide-react'
+import { Bell, BriefcaseBusiness, CheckCheck, Mail, MessageCircle, MessageSquareQuote, UserPlus } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -23,6 +23,9 @@ const iconByType = {
   connection_request: UserPlus,
   connection_accepted: UserPlus,
   message_received: Mail,
+  endorsement_requested: MessageSquareQuote,
+  endorsement_request_completed: MessageSquareQuote,
+  endorsement_request_declined: MessageSquareQuote,
   post_liked: Bell,
   post_commented: MessageCircle,
   job_application_submitted: BriefcaseBusiness,

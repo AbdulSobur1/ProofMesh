@@ -153,6 +153,19 @@ export type ProofDetailResponse = {
   proof: Proof | null
   user: ProfileUser
   reputation: Reputation
+  endorsementRequests?: ProofEndorsementRequest[]
+  viewerEndorsementRequest?: ProofEndorsementRequest | null
+}
+
+export type ProofEndorsementRequest = {
+  id: string
+  relationship: PeerVerificationRelationship
+  message: string | null
+  status: 'pending' | 'completed' | 'declined'
+  createdAt: string
+  respondedAt: string | null
+  requester: ConnectionPreviewUser
+  recipient: ConnectionPreviewUser
 }
 
 export type SessionUser = {
@@ -180,6 +193,9 @@ export type NotificationType =
   | 'connection_request'
   | 'connection_accepted'
   | 'message_received'
+  | 'endorsement_requested'
+  | 'endorsement_request_completed'
+  | 'endorsement_request_declined'
   | 'post_liked'
   | 'post_commented'
   | 'job_application_submitted'

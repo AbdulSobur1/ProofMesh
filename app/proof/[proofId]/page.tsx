@@ -11,9 +11,11 @@ import {
   Flag,
   Hash,
   MessageSquareQuote,
+  Send,
   ShieldCheck,
   Sparkles,
   User,
+  X,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -57,12 +59,21 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
   const [formError, setFormError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isReporting, setIsReporting] = useState(false)
+  const [isRequesting, setIsRequesting] = useState(false)
+  const [requestError, setRequestError] = useState<string | null>(null)
+  const [requestSuccess, setRequestSuccess] = useState<string | null>(null)
+  const [decliningRequestId, setDecliningRequestId] = useState<string | null>(null)
   const [reportReason, setReportReason] = useState<'spam' | 'abuse' | 'fraud' | 'misleading' | 'copyright' | 'other'>('fraud')
   const [reportDetails, setReportDetails] = useState('')
   const [form, setForm] = useState({
     verifierName: '',
     verifierRole: '',
     verifierCompany: '',
+    relationship: 'peer' as PeerVerificationRelationship,
+    message: '',
+  })
+  const [requestForm, setRequestForm] = useState({
+    recipientUsername: '',
     relationship: 'peer' as PeerVerificationRelationship,
     message: '',
   })
@@ -107,6 +118,9 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
       : ownerTrustLevel === 'elevated'
         ? 'border-sky-500/20 bg-sky-500/10 text-sky-300'
         : 'border-white/10 bg-white/[0.04] text-foreground'
+  const isOwnProof = currentUser?.username === data?.user?.username
+  const viewerRequest = data?.viewerEndorsementRequest ?? null
+  const ownerRequests = data?.endorsementRequests ?? []
 
   const relationshipLabel = useMemo(
     () => Object.fromEntries(RELATIONSHIP_OPTIONS.map((option) => [option.value, option.label])) as Record<PeerVerificationRelationship, string>,
@@ -179,6 +193,65 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
       setFormError(submitError instanceof Error ? submitError.message : 'Failed to submit report')
     } finally {
       setIsReporting(false)
+    }
+  }
+
+  const handleRequestEndorsement = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsRequesting(true)
+    setRequestError(null)
+    setRequestSuccess(null)
+
+    try {
+      const response = await fetch(`/api/proofs/${encodeURIComponent(params.proofId)}/requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestForm),
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to send request')
+      }
+
+      setRequestForm({
+        recipientUsername: '',
+        relationship: 'peer',
+        message: '',
+      })
+      setRequestSuccess('Request sent. They will see it in notifications and on this proof.')
+      await load()
+    } catch (submitError) {
+      setRequestError(submitError instanceof Error ? submitError.message : 'Failed to send request')
+    } finally {
+      setIsRequesting(false)
+    }
+  }
+
+  const handleDeclineRequest = async (requestId: string) => {
+    setDecliningRequestId(requestId)
+    setFormError(null)
+    try {
+      const response = await fetch(`/api/endorsement-requests/${encodeURIComponent(requestId)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'decline' }),
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to decline request')
+      }
+
+      await load()
+    } catch (submitError) {
+      setFormError(submitError instanceof Error ? submitError.message : 'Failed to decline request')
+    } finally {
+      setDecliningRequestId(null)
     }
   }
 
@@ -533,6 +606,153 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                   </div>
                 </Card>
 
+                {isOwnProof ? (
+                  <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                      <Send className="size-4 text-primary" />
+                      Request Verification
+                    </div>
+                    <h2 className="mt-2 text-lg font-semibold text-foreground">Ask someone to back this proof</h2>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      Send a direct verification request to a peer, client, manager, or collaborator already on ProofMesh.
+                    </p>
+
+                    <form className="mt-5 space-y-4" onSubmit={handleRequestEndorsement}>
+                      {requestError ? (
+                        <div className="rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                          {requestError}
+                        </div>
+                      ) : null}
+                      {requestSuccess ? (
+                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                          {requestSuccess}
+                        </div>
+                      ) : null}
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-foreground">Recipient username</label>
+                        <Input
+                          value={requestForm.recipientUsername}
+                          onChange={(event) => setRequestForm((prev) => ({ ...prev, recipientUsername: event.target.value }))}
+                          placeholder="janedoe"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-foreground">Relationship</label>
+                        <select
+                          value={requestForm.relationship}
+                          onChange={(event) =>
+                            setRequestForm((prev) => ({
+                              ...prev,
+                              relationship: event.target.value as PeerVerificationRelationship,
+                            }))
+                          }
+                          className="flex h-11 w-full rounded-xl border border-input bg-card/70 px-4 py-2 text-sm text-foreground outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        >
+                          {RELATIONSHIP_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-foreground">Request note</label>
+                        <Textarea
+                          value={requestForm.message}
+                          onChange={(event) => setRequestForm((prev) => ({ ...prev, message: event.target.value }))}
+                          rows={4}
+                          placeholder="Share context on how you worked together and what you’d like them to verify."
+                        />
+                      </div>
+
+                      <Button type="submit" className="w-full" disabled={isRequesting}>
+                        {isRequesting ? 'Sending request...' : 'Send verification request'}
+                      </Button>
+                    </form>
+                  </Card>
+                ) : null}
+
+                {isOwnProof && ownerRequests.length > 0 ? (
+                  <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Request Status</p>
+                        <h2 className="mt-1 text-lg font-semibold text-foreground">Verification requests</h2>
+                      </div>
+                      <Badge variant="outline" className="border-white/10 bg-white/[0.04]">
+                        {ownerRequests.length} total
+                      </Badge>
+                    </div>
+                    <div className="mt-5 space-y-3">
+                      {ownerRequests.map((request) => (
+                        <div key={request.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-semibold text-foreground">
+                                  {request.recipient.displayName || request.recipient.username}
+                                </p>
+                                <Badge variant="secondary" className="border border-white/10 bg-white/5 text-foreground">
+                                  {relationshipLabel[request.relationship]}
+                                </Badge>
+                                <Badge
+                                  variant="secondary"
+                                  className={
+                                    request.status === 'completed'
+                                      ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                                      : request.status === 'declined'
+                                        ? 'border border-amber-500/20 bg-amber-500/10 text-amber-300'
+                                        : 'border border-sky-500/20 bg-sky-500/10 text-sky-300'
+                                  }
+                                >
+                                  {request.status}
+                                </Badge>
+                              </div>
+                              {request.message ? (
+                                <p className="mt-2 text-sm leading-6 text-foreground/85">{request.message}</p>
+                              ) : null}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{formatDate(request.createdAt)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                ) : null}
+
+                {viewerRequest?.status === 'pending' ? (
+                  <Card className="rounded-[28px] border border-sky-500/20 bg-sky-500/10 p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-200">
+                      <MessageSquareQuote className="size-4" />
+                      Pending Request
+                    </div>
+                    <h2 className="mt-2 text-lg font-semibold text-foreground">You were asked to verify this proof</h2>
+                    <p className="mt-2 text-sm leading-6 text-foreground/85">
+                      {viewerRequest.requester.displayName || viewerRequest.requester.username} requested a {relationshipLabel[viewerRequest.relationship].toLowerCase()} endorsement for this proof.
+                    </p>
+                    {viewerRequest.message ? (
+                      <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm leading-6 text-foreground/85">
+                        {viewerRequest.message}
+                      </p>
+                    ) : null}
+                    <div className="mt-4 flex gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => handleDeclineRequest(viewerRequest.id)}
+                        disabled={decliningRequestId === viewerRequest.id}
+                        className="border-white/10 bg-white/[0.04]"
+                      >
+                        <X className="size-4" />
+                        {decliningRequestId === viewerRequest.id ? 'Declining...' : 'Decline'}
+                      </Button>
+                    </div>
+                  </Card>
+                ) : null}
+
                 <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                     <MessageSquareQuote className="size-4 text-primary" />
@@ -541,6 +761,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                   <h2 className="mt-2 text-lg font-semibold text-foreground">Ask a peer, client, or manager to back this proof</h2>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
                     These notes are attached directly to the proof and strengthen the trust signal for anyone reviewing the work.
+                    {viewerRequest?.status === 'pending' ? ' Submitting one here will automatically complete the pending request.' : ''}
                   </p>
 
                   <form className="mt-5 space-y-4" onSubmit={handleSubmitVerification}>

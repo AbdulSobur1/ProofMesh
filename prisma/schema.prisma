@@ -51,6 +51,8 @@ model User {
   companyPosts         CompanyPost[]   @relation("CompanyPostAuthor")
   reports              Report[]
   reviewedEndorsements ProofEndorsement[]
+  sentEndorsementRequests     ProofEndorsementRequest[] @relation("EndorsementRequestRequester")
+  receivedEndorsementRequests ProofEndorsementRequest[] @relation("EndorsementRequestRecipient")
 }
 
 model Company {
@@ -358,6 +360,7 @@ model Proof {
   userId                 String
   user                   User               @relation(fields: [userId], references: [id])
   endorsements           ProofEndorsement[]
+  endorsementRequests    ProofEndorsementRequest[]
   posts                  Post[]
   jobApplications        JobApplication[]
 
@@ -386,6 +389,26 @@ model ProofEndorsement {
   @@index([relationship])
   @@index([createdAt])
   @@index([reviewerUserId])
+}
+
+model ProofEndorsementRequest {
+  id           String   @id @default(cuid())
+  relationship String
+  message      String?
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  respondedAt  DateTime?
+  proofId      String
+  requesterId  String
+  recipientId  String
+  proof        Proof    @relation(fields: [proofId], references: [id], onDelete: Cascade)
+  requester    User     @relation("EndorsementRequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  recipient    User     @relation("EndorsementRequestRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([proofId, status])
+  @@index([requesterId, status])
+  @@index([recipientId, status])
+  @@unique([proofId, recipientId, status])
 }
 
 model SavedCandidate {

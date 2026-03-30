@@ -7,6 +7,7 @@ import { getCurrentToken } from '@/lib/auth-options'
 import { PeerVerification, type PeerVerificationRelationship } from '@/lib/types'
 import { syncUserTrustLevel } from '@/lib/services/trust-server'
 import { parseEvidenceItems } from '@/lib/services/evidence'
+import { createNotification } from '@/lib/services/notifications'
 
 const RELATIONSHIPS = ['peer', 'client', 'manager', 'collaborator'] as const
 
@@ -75,6 +76,24 @@ export async function POST(
       return NextResponse.json({ error: 'Proof not found' }, { status: 404 })
     }
 
+    const pendingRequest = reviewer?.id
+      ? await prisma.proofEndorsementRequest.findFirst({
+          where: {
+            proofId: proof.id,
+            recipientId: reviewer.id,
+            status: 'pending',
+          },
+          include: {
+            requester: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+        })
+      : null
+
     const created = await prisma.proofEndorsement.create({
       data: {
         proofId: proof.id,
@@ -88,6 +107,25 @@ export async function POST(
         message: input.message,
       },
     })
+
+    if (pendingRequest) {
+      await prisma.proofEndorsementRequest.update({
+        where: { id: pendingRequest.id },
+        data: {
+          status: 'completed',
+          respondedAt: new Date(),
+        },
+      })
+
+      await createNotification({
+        userId: pendingRequest.requester.id,
+        actorId: reviewer?.id ?? null,
+        type: 'endorsement_request_completed',
+        title: 'Endorsement request completed',
+        body: `@${reviewer?.username ?? created.verifierName} verified "${proof.title}".`,
+        link: `/proof/${encodeURIComponent(proof.id)}`,
+      })
+    }
 
     const allEndorsements = [created, ...proof.endorsements]
     const verification = evaluateVerification({

@@ -1,11 +1,22 @@
 import { NextResponse } from 'next/server'
 import { calculateReputation } from '@/lib/services/reputation'
 import { prisma } from '@/lib/db'
-import { PeerVerification, Proof } from '@/lib/types'
+import { PeerVerification, Proof, ProofEndorsementRequest } from '@/lib/types'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
 import { syncUserTrustLevel } from '@/lib/services/trust-server'
 import { parseEvidenceItems } from '@/lib/services/evidence'
+import { getCurrentToken } from '@/lib/auth-options'
+
+const requestUserSelect = {
+  id: true,
+  username: true,
+  displayName: true,
+  headline: true,
+  avatarUrl: true,
+  currentRole: true,
+  currentCompany: true,
+} as const
 
 const toEndorsement = (endorsement: {
   id: string
@@ -90,10 +101,49 @@ const toProof = (proof: {
   createdAt: proof.createdAt.toISOString(),
 })
 
+const toEndorsementRequest = (request: {
+  id: string
+  relationship: string
+  message: string | null
+  status: string
+  createdAt: Date
+  respondedAt: Date | null
+  requester: {
+    id: string
+    username: string
+    displayName: string | null
+    headline: string | null
+    avatarUrl: string | null
+    currentRole: string | null
+    currentCompany: string | null
+  }
+  recipient: {
+    id: string
+    username: string
+    displayName: string | null
+    headline: string | null
+    avatarUrl: string | null
+    currentRole: string | null
+    currentCompany: string | null
+  }
+}): ProofEndorsementRequest => ({
+  id: request.id,
+  relationship: request.relationship as ProofEndorsementRequest['relationship'],
+  message: request.message,
+  status: request.status as ProofEndorsementRequest['status'],
+  createdAt: request.createdAt.toISOString(),
+  respondedAt: request.respondedAt?.toISOString() ?? null,
+  requester: request.requester,
+  recipient: request.recipient,
+})
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { proofId: string } }
 ) {
+  const token = await getCurrentToken(request)
+  const currentUserId = token?.sub ?? null
+
   const proof = await prisma.proof.findUnique({
     where: { id: params.proofId },
     include: {
@@ -131,6 +181,23 @@ export async function GET(
     },
   })
 
+  const endorsementRequests = await prisma.proofEndorsementRequest.findMany({
+    where: {
+      proofId: proof.id,
+    },
+    include: {
+      requester: {
+        select: requestUserSelect,
+      },
+      recipient: {
+        select: requestUserSelect,
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  const requestDtos = endorsementRequests.map(toEndorsementRequest)
+
   return NextResponse.json({
     proof: toProof(proof),
     user: {
@@ -150,5 +217,10 @@ export async function GET(
       createdAt: owner.createdAt.toISOString(),
     },
     reputation: calculateReputation(ownerProofs.map(toProof)),
+    endorsementRequests: currentUserId === proof.userId ? requestDtos : [],
+    viewerEndorsementRequest:
+      currentUserId && currentUserId !== proof.userId
+        ? requestDtos.find((entry) => entry.recipient.id === currentUserId && entry.status === 'pending') ?? null
+        : null,
   })
 }
