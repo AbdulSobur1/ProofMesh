@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { evaluateProof } from '@/lib/services/ai-evaluator'
+import { AIConfigurationError, AIEvaluationError, evaluateProof } from '@/lib/services/ai-evaluator'
 import { PROOF_PROFESSIONS, PROOF_TYPES } from '@/lib/proof-taxonomy'
 
 const evaluateSchema = z.object({
@@ -27,12 +27,29 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(result)
-  } catch {
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          error: 'Invalid request payload',
+        },
+        { status: 400 }
+      )
+    }
+
+    if (error instanceof AIConfigurationError) {
+      return NextResponse.json({ error: error.message }, { status: 503 })
+    }
+
+    if (error instanceof AIEvaluationError) {
+      return NextResponse.json({ error: error.message }, { status: 502 })
+    }
+
     return NextResponse.json(
       {
-        error: 'Invalid request payload',
+        error: 'Failed to evaluate proof',
       },
-      { status: 400 }
+      { status: 500 }
     )
   }
 }

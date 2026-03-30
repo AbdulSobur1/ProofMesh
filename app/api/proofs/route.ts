@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
-import { evaluateProof } from '@/lib/services/ai-evaluator'
+import { AIConfigurationError, AIEvaluationError, evaluateProof } from '@/lib/services/ai-evaluator'
 import { generateTxHash } from '@/lib/services/proof-service'
 import { getCurrentToken } from '@/lib/auth-options'
 import { parseTags, serializeTags } from '@/lib/services/tags'
@@ -256,12 +256,29 @@ export async function POST(request: Request) {
       },
       proof: toProofDto(proof),
     })
-  } catch {
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          error: 'Invalid request payload',
+        },
+        { status: 400 }
+      )
+    }
+
+    if (error instanceof AIConfigurationError) {
+      return NextResponse.json({ error: error.message }, { status: 503 })
+    }
+
+    if (error instanceof AIEvaluationError) {
+      return NextResponse.json({ error: error.message }, { status: 502 })
+    }
+
     return NextResponse.json(
       {
-        error: 'Invalid request payload',
+        error: 'Failed to submit proof',
       },
-      { status: 400 }
+      { status: 500 }
     )
   }
 }

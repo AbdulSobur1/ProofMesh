@@ -7,10 +7,25 @@ export interface EvaluationResult {
   tags: string[]
 }
 
+export class AIConfigurationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AIConfigurationError'
+  }
+}
+
+export class AIEvaluationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AIEvaluationError'
+  }
+}
+
 const buildPrompt = (input: {
   title: string
   description: string
   link?: string | null
+  sourceCategory?: string
   profession: ProofProfession
   proofType: ProofType
   outcomeSummary?: string | null
@@ -30,6 +45,7 @@ Guidelines:
 Proof Context:
 Profession: ${PROFESSION_LABELS[input.profession]}
 Proof Type: ${PROOF_TYPE_LABELS[input.proofType]}
+Evidence Type: ${input.sourceCategory ?? 'general'}
 Title: ${input.title}
 Description: ${input.description}
 Outcome Summary: ${input.outcomeSummary ?? 'N/A'}
@@ -73,6 +89,58 @@ const mockEvaluation = (profession: ProofProfession): EvaluationResult => {
   }
 }
 
+const shouldAllowMockEvaluation = () => process.env.OPENAI_ALLOW_MOCK === 'true'
+
+const getOpenAIConfig = () => {
+  const apiKey = process.env.OPENAI_API_KEY?.trim()
+  const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini'
+
+  if (!apiKey) {
+    if (shouldAllowMockEvaluation()) {
+      return {
+        apiKey: null,
+        model,
+        allowMock: true,
+      }
+    }
+
+    throw new AIConfigurationError(
+      'OpenAI is not configured. Set OPENAI_API_KEY, or set OPENAI_ALLOW_MOCK=true for local mock evaluation.'
+    )
+  }
+
+  return {
+    apiKey,
+    model,
+    allowMock: shouldAllowMockEvaluation(),
+  }
+}
+
+const normalizeEvaluation = (parsed: EvaluationResult): EvaluationResult => {
+  if (
+    typeof parsed.score !== 'number' ||
+    typeof parsed.feedback !== 'string' ||
+    !Array.isArray(parsed.tags)
+  ) {
+    throw new AIEvaluationError('The AI response did not match the expected evaluation format.')
+  }
+
+  const normalizedTags = parsed.tags
+    .map((tag) => String(tag).trim())
+    .filter(Boolean)
+    .slice(0, 5)
+
+  if (normalizedTags.length === 0) {
+    throw new AIEvaluationError('The AI response did not return any usable tags.')
+  }
+
+  return {
+    score: Math.max(0, Math.min(10, Math.round(parsed.score))),
+    feedback: parsed.feedback.trim(),
+    tags: normalizedTags,
+  }
+}
+
 export const evaluateProof = async (input: {
   title: string
   description: string
@@ -82,17 +150,19 @@ export const evaluateProof = async (input: {
   proofType: ProofType
   outcomeSummary?: string | null
 }): Promise<EvaluationResult> => {
-  if (!process.env.OPENAI_API_KEY) {
+  const config = getOpenAIConfig()
+
+  if (!config.apiKey) {
     return mockEvaluation(input.profession)
   }
 
   try {
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: config.apiKey,
     })
 
     const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+      model: config.model,
       temperature: 0.2,
       messages: [
         {
@@ -109,24 +179,20 @@ export const evaluateProof = async (input: {
 
     const content = response.choices[0]?.message?.content
     if (!content) {
-      return mockEvaluation(input.profession)
+      throw new AIEvaluationError('The AI response was empty.')
     }
 
     const parsed = JSON.parse(content) as EvaluationResult
-    if (
-      typeof parsed.score !== 'number' ||
-      typeof parsed.feedback !== 'string' ||
-      !Array.isArray(parsed.tags)
-    ) {
+    return normalizeEvaluation(parsed)
+  } catch (error) {
+    if (config.allowMock) {
       return mockEvaluation(input.profession)
     }
 
-    return {
-      score: Math.max(0, Math.min(10, Math.round(parsed.score))),
-      feedback: parsed.feedback.trim(),
-      tags: parsed.tags.map((tag) => String(tag).trim()).filter(Boolean),
+    if (error instanceof AIConfigurationError || error instanceof AIEvaluationError) {
+      throw error
     }
-  } catch {
-    return mockEvaluation(input.profession)
+
+    throw new AIEvaluationError('OpenAI evaluation is temporarily unavailable.')
   }
 }
