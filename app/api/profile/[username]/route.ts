@@ -7,6 +7,16 @@ import { parseVerificationSignals } from '@/lib/services/verification'
 import { emptyNetworkCounts, resolveProfileConnectionState } from '@/lib/services/network'
 import { getCurrentToken } from '@/lib/auth-options'
 
+const recentViewerSelect = {
+  id: true,
+  username: true,
+  displayName: true,
+  headline: true,
+  avatarUrl: true,
+  currentRole: true,
+  currentCompany: true,
+} as const
+
 const toEndorsement = (endorsement: {
   id: string
   verifierName: string
@@ -180,6 +190,32 @@ export async function GET(
       status: 'none',
       connectionId: null,
     },
+    profileAnalytics: {
+      totalViews: 0,
+      uniqueViewers: 0,
+      recentViewers: [],
+    },
+    })
+  }
+
+  if (viewerUserId && viewerUserId !== user.id) {
+    await prisma.profileView.upsert({
+      where: {
+        profileUserId_viewerUserId: {
+          profileUserId: user.id,
+          viewerUserId,
+        },
+      },
+      create: {
+        profileUserId: user.id,
+        viewerUserId,
+      },
+      update: {
+        lastViewedAt: new Date(),
+        viewCount: {
+          increment: 1,
+        },
+      },
     })
   }
 
@@ -192,6 +228,21 @@ export async function GET(
       },
     },
   })
+
+  const profileViews = viewerUserId === user.id
+    ? await prisma.profileView.findMany({
+        where: {
+          profileUserId: user.id,
+        },
+        include: {
+          viewerUser: {
+            select: recentViewerSelect,
+          },
+        },
+        orderBy: { lastViewedAt: 'desc' },
+        take: 8,
+      })
+    : []
 
   const proofDtos = proofs.map(toProof)
   const reputation = calculateReputation(proofDtos)
@@ -260,5 +311,10 @@ export async function GET(
       outgoingRequests: outgoingPendingCount,
     },
     viewerConnection: resolveProfileConnectionState(viewerUserId, user.id, viewerConnection),
+    profileAnalytics: {
+      totalViews: profileViews.reduce((sum, entry) => sum + entry.viewCount, 0),
+      uniqueViewers: profileViews.length,
+      recentViewers: profileViews.map((entry) => entry.viewerUser),
+    },
   })
 }

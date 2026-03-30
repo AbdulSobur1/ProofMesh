@@ -126,6 +126,7 @@ export type ProfileResponse = {
   provenSkills: TagFrequency[]
   networkCounts: NetworkCounts
   viewerConnection: ProfileConnectionState
+  profileAnalytics: ProfileAnalytics
 }
 
 export type ProofDetailResponse = {
@@ -417,6 +418,35 @@ export type SearchResultsResponse = {
   jobs: CandidateJobPost[]
   proofs: SearchProofResult[]
   skills: SearchSkillResult[]
+}
+
+export type ProfileAnalytics = {
+  totalViews: number
+  uniqueViewers: number
+  recentViewers: ConnectionPreviewUser[]
+}
+
+export type SavedSearchRecord = {
+  id: string
+  query: string
+  createdAt: string
+  updatedAt: string
+  lastResultCount: number
+  currentResultCount: number
+  newResultDelta: number
+}
+
+export type SavedSearchesResponse = {
+  searches: SavedSearchRecord[]
+}
+
+export type DashboardAnalyticsResponse = {
+  profileViews: {
+    totalViews: number
+    uniqueViewers: number
+    recentViewers: ConnectionPreviewUser[]
+  }
+  savedSearches: SavedSearchRecord[]
 }
 
 export type RoleMatchBreakdown = {

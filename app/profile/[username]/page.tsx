@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { use } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Award, BriefcaseBusiness, Check, Clock3, Code2, GraduationCap, Mail, MapPin, PencilLine, ShieldCheck, Trophy, User, UserPlus, X, Zap } from 'lucide-react'
+import { ArrowRight, Award, BriefcaseBusiness, Check, Clock3, Code2, Eye, GraduationCap, Mail, MapPin, PencilLine, ShieldCheck, Trophy, User, UserPlus, X, Zap } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { ProofCard } from '@/components/proof-card'
@@ -321,6 +321,61 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
             <ReputationChart timeline={timeline} />
           </div>
+
+          {isOwnProfile ? (
+            <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
+              <Card className="rounded-[2rem] border-border/60 p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">Profile view signals</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">Private visibility into who is finding you.</p>
+                  </div>
+                  <Eye className="size-5 text-primary" />
+                </div>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-border/60 bg-background/40 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Total views</p>
+                    <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">{data?.profileAnalytics.totalViews ?? 0}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-background/40 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Unique viewers</p>
+                    <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">{data?.profileAnalytics.uniqueViewers ?? 0}</p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="rounded-[2rem] border-border/60 p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">Recent viewers</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">Signed-in people who recently opened your profile.</p>
+                  </div>
+                  <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                    {data?.profileAnalytics.recentViewers.length ?? 0}
+                  </Badge>
+                </div>
+                {(data?.profileAnalytics.recentViewers.length ?? 0) === 0 ? (
+                  <p className="mt-5 text-sm text-muted-foreground">No signed-in profile viewers yet.</p>
+                ) : (
+                  <div className="mt-5 space-y-3">
+                    {data?.profileAnalytics.recentViewers.map((viewer) => (
+                      <div key={viewer.id} className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/40 p-4">
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{viewer.displayName || viewer.username}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {viewer.headline || [viewer.currentRole, viewer.currentCompany].filter(Boolean).join(' at ') || `@${viewer.username}`}
+                          </p>
+                        </div>
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/profile/${encodeURIComponent(viewer.username)}`}>View</Link>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </div>
+          ) : null}
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
             <Card className="rounded-[2rem] border-border/60 p-6">

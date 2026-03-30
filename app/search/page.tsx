@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { BriefcaseBusiness, Building2, Search, Sparkles, Users } from 'lucide-react'
+import { BookmarkPlus, BriefcaseBusiness, Building2, Search, Sparkles, Users } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CandidateCard } from '@/components/discovery/candidate-card'
 import { Button } from '@/components/ui/button'
-import { CandidateJobPost, DiscoveryCandidate, SearchProofResult, SearchResultsResponse, SearchSkillResult } from '@/lib/types'
+import { CandidateJobPost, DiscoveryCandidate, SavedSearchRecord, SavedSearchesResponse, SearchProofResult, SearchResultsResponse, SearchSkillResult } from '@/lib/types'
 import { PROFESSION_LABELS, type ProofProfession } from '@/lib/proof-taxonomy'
 
 const formatDate = (value: string) =>
@@ -25,8 +25,23 @@ export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
   const [results, setResults] = useState<SearchResultsResponse | null>(null)
+  const [savedSearches, setSavedSearches] = useState<SavedSearchRecord[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isSavingSearch, setIsSavingSearch] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const loadSavedSearches = useCallback(async () => {
+    try {
+      const response = await fetch('/api/search/saved', { cache: 'no-store' })
+      if (!response.ok) {
+        return
+      }
+      const payload = (await response.json()) as SavedSearchesResponse
+      setSavedSearches(payload.searches)
+    } catch {
+      setSavedSearches([])
+    }
+  }, [])
 
   const load = useCallback(async (nextQuery: string) => {
     const trimmedQuery = nextQuery.trim()
@@ -69,14 +84,48 @@ export default function SearchPage() {
     return () => window.clearTimeout(timer)
   }, [load, query])
 
+  useEffect(() => {
+    void loadSavedSearches()
+  }, [loadSavedSearches])
+
   const candidates = useMemo(() => results?.candidates ?? [], [results])
   const companies = useMemo(() => results?.companies ?? [], [results])
   const jobs = useMemo(() => results?.jobs ?? [], [results])
   const proofs = useMemo(() => results?.proofs ?? [], [results])
   const skills = useMemo(() => results?.skills ?? [], [results])
   const resultCount = candidates.length + companies.length + jobs.length + proofs.length + skills.length
+  const isSaved = useMemo(
+    () => savedSearches.some((search) => search.query.toLowerCase() === submittedQuery.toLowerCase()),
+    [savedSearches, submittedQuery]
+  )
 
   const noopToggleSave = async (_candidate: DiscoveryCandidate) => {}
+
+  const saveSearch = async () => {
+    const trimmedQuery = submittedQuery.trim()
+    if (!trimmedQuery) return
+
+    setIsSavingSearch(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/search/saved', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: trimmedQuery }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to save search')
+      }
+      await loadSavedSearches()
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to save search')
+    } finally {
+      setIsSavingSearch(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -104,6 +153,15 @@ export default function SearchPage() {
                     placeholder="Search for product design, React, growth marketing, Acme, backend engineer..."
                     className="h-12 bg-background/80"
                   />
+                  <Button
+                    type="button"
+                    variant={isSaved ? 'outline' : 'default'}
+                    onClick={saveSearch}
+                    disabled={!submittedQuery.trim() || isSavingSearch || isSaved}
+                  >
+                    <BookmarkPlus className="size-4" />
+                    {isSaved ? 'Saved' : isSavingSearch ? 'Saving...' : 'Save search'}
+                  </Button>
                   <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                     {isLoading ? 'Searching…' : `${resultCount} results`}
                   </Badge>
@@ -134,6 +192,33 @@ export default function SearchPage() {
             </Card>
           ) : (
             <div className="mt-6 space-y-8">
+              {savedSearches.length > 0 ? (
+                <Card className="rounded-[2rem] border border-border/60 p-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-lg font-semibold text-foreground">Saved searches</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">Pinned queries you want to revisit and track.</p>
+                    </div>
+                    <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                      {savedSearches.length}
+                    </Badge>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {savedSearches.map((search) => (
+                      <button
+                        key={search.id}
+                        type="button"
+                        onClick={() => setQuery(search.query)}
+                        className="rounded-full border border-border/60 bg-background/70 px-3 py-1.5 text-sm text-foreground transition-colors hover:border-primary/30 hover:bg-primary/5"
+                      >
+                        {search.query}
+                        {search.newResultDelta > 0 ? ` • +${search.newResultDelta}` : ''}
+                      </button>
+                    ))}
+                  </div>
+                </Card>
+              ) : null}
+
               {candidates.length > 0 ? (
                 <section>
                   <div className="mb-4 flex items-center gap-3">
