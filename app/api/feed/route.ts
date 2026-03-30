@@ -42,6 +42,16 @@ const postInclude = {
       createdAt: true,
     },
   },
+  likes: {
+    select: {
+      userId: true,
+    },
+  },
+  comments: {
+    select: {
+      id: true,
+    },
+  },
 } as const
 
 async function getCurrentUserId(request: Request) {
@@ -88,7 +98,7 @@ export async function GET(request: Request) {
   })
 
   return NextResponse.json({
-    posts: posts.map(toFeedPost),
+    posts: posts.map((post) => toFeedPost(post, currentUserId)),
   })
 }
 
@@ -127,7 +137,7 @@ export async function POST(request: Request) {
       include: postInclude,
     })
 
-    return NextResponse.json({ post: toFeedPost(post) })
+    return NextResponse.json({ post: toFeedPost(post, currentUserId) })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Invalid post payload'
     return NextResponse.json({ error: message }, { status: 400 })

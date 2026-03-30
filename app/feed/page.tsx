@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Newspaper, Send } from 'lucide-react'
+import { Heart, MessageCircle, Newspaper, Send } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { ProofCard } from '@/components/proof-card'
 import { useProofs } from '@/lib/proof-context'
-import { FeedPost, FeedResponse } from '@/lib/types'
+import { FeedComment, FeedCommentsResponse, FeedPost, FeedResponse } from '@/lib/types'
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleString('en-US', {
@@ -31,6 +31,10 @@ export default function FeedPage() {
   const [body, setBody] = useState('')
   const [postType, setPostType] = useState<'text' | 'proof_share'>('text')
   const [selectedProofId, setSelectedProofId] = useState('')
+  const [engagingPostId, setEngagingPostId] = useState<string | null>(null)
+  const [openCommentsPostId, setOpenCommentsPostId] = useState<string | null>(null)
+  const [commentsByPostId, setCommentsByPostId] = useState<Record<string, FeedComment[]>>({})
+  const [commentDraftByPostId, setCommentDraftByPostId] = useState<Record<string, string>>({})
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -86,6 +90,74 @@ export default function FeedPage() {
       setError(publishError instanceof Error ? publishError.message : 'Failed to publish update')
     } finally {
       setIsPosting(false)
+    }
+  }
+
+  const toggleLike = async (postId: string) => {
+    setEngagingPostId(postId)
+    setError(null)
+    try {
+      const response = await fetch(`/api/feed/${encodeURIComponent(postId)}/like`, {
+        method: 'POST',
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to update like')
+      }
+      await load()
+    } catch (engagementError) {
+      setError(engagementError instanceof Error ? engagementError.message : 'Failed to update like')
+    } finally {
+      setEngagingPostId(null)
+    }
+  }
+
+  const loadComments = async (postId: string) => {
+    setEngagingPostId(postId)
+    setError(null)
+    try {
+      const response = await fetch(`/api/feed/${encodeURIComponent(postId)}/comments`, {
+        cache: 'no-store',
+      })
+      const payload = (await response.json()) as FeedCommentsResponse
+      if (!response.ok) {
+        throw new Error('Failed to load comments')
+      }
+      setCommentsByPostId((current) => ({ ...current, [postId]: payload.comments }))
+      setOpenCommentsPostId((current) => (current === postId ? null : postId))
+    } catch (commentsError) {
+      setError(commentsError instanceof Error ? commentsError.message : 'Failed to load comments')
+    } finally {
+      setEngagingPostId(null)
+    }
+  }
+
+  const addComment = async (postId: string) => {
+    const draft = commentDraftByPostId[postId]?.trim()
+    if (!draft) return
+
+    setEngagingPostId(postId)
+    setError(null)
+    try {
+      const response = await fetch(`/api/feed/${encodeURIComponent(postId)}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ body: draft }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to add comment')
+      }
+
+      setCommentDraftByPostId((current) => ({ ...current, [postId]: '' }))
+      await load()
+      await loadComments(postId)
+    } catch (commentError) {
+      setError(commentError instanceof Error ? commentError.message : 'Failed to add comment')
+    } finally {
+      setEngagingPostId(null)
     }
   }
 
@@ -230,6 +302,73 @@ export default function FeedPage() {
                         {post.proof ? (
                           <div className="mt-5">
                             <ProofCard proof={post.proof} />
+                          </div>
+                        ) : null}
+
+                        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/60 pt-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleLike(post.id)}
+                            disabled={engagingPostId === post.id}
+                            className={post.likedByViewer ? 'border-rose-500/30 bg-rose-500/10 text-rose-400' : ''}
+                          >
+                            <Heart className="size-4" />
+                            {post.likeCount} like{post.likeCount === 1 ? '' : 's'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => loadComments(post.id)}
+                            disabled={engagingPostId === post.id}
+                          >
+                            <MessageCircle className="size-4" />
+                            {post.commentCount} comment{post.commentCount === 1 ? '' : 's'}
+                          </Button>
+                        </div>
+
+                        {openCommentsPostId === post.id ? (
+                          <div className="mt-5 space-y-4 rounded-2xl border border-border/60 bg-background/40 p-4">
+                            <div className="space-y-3">
+                              {(commentsByPostId[post.id] ?? []).length === 0 ? (
+                                <p className="text-sm text-muted-foreground">No comments yet.</p>
+                              ) : (
+                                (commentsByPostId[post.id] ?? []).map((comment) => (
+                                  <div key={comment.id} className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div>
+                                        <p className="text-sm font-semibold text-foreground">
+                                          {comment.author.displayName || comment.author.username}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">@{comment.author.username}</p>
+                                      </div>
+                                      <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
+                                    </div>
+                                    <p className="mt-3 text-sm leading-6 text-foreground/85">{comment.body}</p>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+
+                            <div className="flex gap-3">
+                              <Textarea
+                                value={commentDraftByPostId[post.id] ?? ''}
+                                onChange={(event) =>
+                                  setCommentDraftByPostId((current) => ({
+                                    ...current,
+                                    [post.id]: event.target.value,
+                                  }))
+                                }
+                                rows={2}
+                                placeholder="Add a comment..."
+                              />
+                              <Button onClick={() => addComment(post.id)} disabled={engagingPostId === post.id || !(commentDraftByPostId[post.id] ?? '').trim()}>
+                                <Send className="size-4" />
+                                Comment
+                              </Button>
+                            </div>
                           </div>
                         ) : null}
                       </Card>

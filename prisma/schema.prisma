@@ -32,6 +32,8 @@ model User {
   conversationMemberships ConversationParticipant[]
   sentMessages        Message[]
   posts               Post[]
+  postLikes           PostLike[]
+  postComments        PostComment[]
   jobApplications     JobApplication[]
   ownedCompanies      Company[]        @relation("CompanyOwner")
   companyMemberships  CompanyMember[]
@@ -137,10 +139,37 @@ model Post {
   proofId     String?
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   proof       Proof?   @relation(fields: [proofId], references: [id], onDelete: SetNull)
+  likes       PostLike[]
+  comments    PostComment[]
 
   @@index([userId, createdAt])
   @@index([proofId])
   @@index([createdAt])
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId])
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model WorkExperience {

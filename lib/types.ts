@@ -246,10 +246,24 @@ export type FeedPost = {
   createdAt: string
   author: FeedAuthor
   proof: Proof | null
+  likeCount: number
+  commentCount: number
+  likedByViewer: boolean
 }
 
 export type FeedResponse = {
   posts: FeedPost[]
+}
+
+export type FeedComment = {
+  id: string
+  body: string
+  createdAt: string
+  author: FeedAuthor
+}
+
+export type FeedCommentsResponse = {
+  comments: FeedComment[]
 }
 
 export type CompanyProfile = {

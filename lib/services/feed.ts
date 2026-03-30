@@ -1,4 +1,4 @@
-import { FeedPost, Proof } from '@/lib/types'
+import { FeedComment, FeedPost, Proof } from '@/lib/types'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
 
@@ -72,7 +72,9 @@ export const toFeedPost = (post: {
     verifiedAt: Date | null
     createdAt: Date
   } | null
-}): FeedPost => ({
+  likes: Array<{ userId: string }>
+  comments: Array<{ id: string }>
+}, currentUserId: string): FeedPost => ({
   id: post.id,
   body: post.body,
   postType: post.postType === 'proof_share' ? 'proof_share' : 'text',
@@ -87,4 +89,35 @@ export const toFeedPost = (post: {
     currentCompany: post.user.currentCompany,
   },
   proof: post.proof ? toProof(post.proof) : null,
+  likeCount: post.likes.length,
+  commentCount: post.comments.length,
+  likedByViewer: post.likes.some((like) => like.userId === currentUserId),
+})
+
+export const toFeedComment = (comment: {
+  id: string
+  body: string
+  createdAt: Date
+  user: {
+    id: string
+    username: string
+    displayName: string | null
+    headline: string | null
+    avatarUrl: string | null
+    currentRole: string | null
+    currentCompany: string | null
+  }
+}): FeedComment => ({
+  id: comment.id,
+  body: comment.body,
+  createdAt: comment.createdAt.toISOString(),
+  author: {
+    id: comment.user.id,
+    username: comment.user.username,
+    displayName: comment.user.displayName,
+    headline: comment.user.headline,
+    avatarUrl: comment.user.avatarUrl,
+    currentRole: comment.user.currentRole,
+    currentCompany: comment.user.currentCompany,
+  },
 })
