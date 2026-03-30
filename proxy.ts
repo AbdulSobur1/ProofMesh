@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-const authenticatedPages = ['/dashboard', '/discover', '/submit', '/profile', '/proof', '/network', '/messages', '/feed', '/jobs', '/company']
+const authenticatedPages = ['/dashboard', '/discover', '/submit', '/profile', '/proof', '/network', '/messages', '/notifications', '/feed', '/jobs', '/company']
 const publicAuthPages = ['/', '/login', '/signup']
-const protectedApiPrefixes = ['/api/discovery', '/api/jobs', '/api/profile', '/api/proofs', '/api/reputation', '/api/network', '/api/messages', '/api/feed', '/api/companies']
+const protectedApiPrefixes = ['/api/discovery', '/api/jobs', '/api/profile', '/api/proofs', '/api/reputation', '/api/network', '/api/messages', '/api/notifications', '/api/feed', '/api/companies']
 const authApiPrefixes = ['/api/auth']
 
 function isMatch(pathname: string, prefixes: string[]) {
@@ -55,6 +55,7 @@ export const config = {
     '/discover/:path*',
     '/network/:path*',
     '/messages/:path*',
+    '/notifications/:path*',
     '/feed/:path*',
     '/jobs/:path*',
     '/company/:path*',
@@ -65,6 +66,7 @@ export const config = {
     '/api/jobs/:path*',
     '/api/network/:path*',
     '/api/messages/:path*',
+    '/api/notifications/:path*',
     '/api/feed/:path*',
     '/api/companies/:path*',
     '/api/profile/:path*',

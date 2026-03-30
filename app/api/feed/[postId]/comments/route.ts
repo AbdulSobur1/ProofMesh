@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { toFeedComment } from '@/lib/services/feed'
+import { createNotification } from '@/lib/services/notifications'
 
 const createCommentSchema = z.object({
   body: z.string().trim().min(1).max(800),
@@ -62,6 +63,17 @@ export async function POST(
     const body = await request.json()
     const input = createCommentSchema.parse(body)
 
+    const post = await prisma.post.findUnique({
+      where: { id: params.postId },
+      select: {
+        userId: true,
+      },
+    })
+
+    if (!post) {
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+    }
+
     const comment = await prisma.postComment.create({
       data: {
         postId: params.postId,
@@ -69,6 +81,15 @@ export async function POST(
         body: input.body,
       },
       include: commentInclude,
+    })
+
+    await createNotification({
+      userId: post.userId,
+      actorId: currentUserId,
+      type: 'post_commented',
+      title: 'New comment on your post',
+      body: `@${comment.user.username} commented on your post.`,
+      link: '/feed',
     })
 
     return NextResponse.json({ comment: toFeedComment(comment) })

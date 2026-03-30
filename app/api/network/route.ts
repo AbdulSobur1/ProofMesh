@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { emptyNetworkCounts, toConnectionRecord } from '@/lib/services/network'
+import { createNotification } from '@/lib/services/notifications'
 
 const requestSchema = z.object({
   targetUsername: z.string().trim().min(1),
@@ -138,6 +139,15 @@ export async function POST(request: Request) {
         recipientId: targetUser.id,
       },
       include: connectionInclude,
+    })
+
+    await createNotification({
+      userId: targetUser.id,
+      actorId: currentUserId,
+      type: 'connection_request',
+      title: 'New connection request',
+      body: `@${connection.requester.username} wants to connect with you on ProofMesh.`,
+      link: '/network',
     })
 
     return NextResponse.json({ connection: toConnectionRecord(connection) })

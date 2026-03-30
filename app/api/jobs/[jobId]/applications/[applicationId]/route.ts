@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { toJobApplicationDto } from '@/lib/services/jobs'
+import { createNotification } from '@/lib/services/notifications'
 
 const updateSchema = z.object({
   status: z.enum(['submitted', 'reviewing', 'shortlisted', 'rejected']),
@@ -88,6 +89,17 @@ export async function PATCH(
       },
       include: applicantInclude,
     })
+
+    if (existingApplication.status !== input.status) {
+      await createNotification({
+        userId: application.applicant.id,
+        actorId: recruiterId,
+        type: 'job_application_status',
+        title: 'Application status updated',
+        body: `Your application for ${job.title} is now ${input.status}.`,
+        link: '/jobs',
+      })
+    }
 
     return NextResponse.json({
       application: toJobApplicationDto(application),

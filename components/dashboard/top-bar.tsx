@@ -1,13 +1,51 @@
 "use client"
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { LogOut, MenuSquare, Sparkles } from 'lucide-react'
+import { Bell, LogOut, MenuSquare, Sparkles } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useProofs } from '@/lib/proof-context'
+import { NotificationsResponse } from '@/lib/types'
 
 export function TopBar() {
   const { currentUser, signOut } = useProofs()
+  const pathname = usePathname()
   const identityLabel = currentUser?.displayName?.trim() || currentUser?.username
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadNotifications = async () => {
+      if (!currentUser) {
+        setUnreadCount(0)
+        return
+      }
+
+      try {
+        const response = await fetch('/api/notifications', { cache: 'no-store' })
+        if (!response.ok) {
+          return
+        }
+
+        const payload = (await response.json()) as NotificationsResponse
+        if (!cancelled) {
+          setUnreadCount(payload.unreadCount)
+        }
+      } catch {
+        if (!cancelled) {
+          setUnreadCount(0)
+        }
+      }
+    }
+
+    void loadNotifications()
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentUser, pathname])
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/75 backdrop-blur">
@@ -25,6 +63,17 @@ export function TopBar() {
         <div className="ml-auto flex items-center gap-2">
           {currentUser ? (
             <>
+              <Button variant="outline" size="sm" asChild className="relative gap-2">
+                <Link href="/notifications">
+                  <Bell className="size-4" />
+                  Notifications
+                  {unreadCount > 0 ? (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  ) : null}
+                </Link>
+              </Button>
               <div className="hidden sm:block text-right">
                 <div className="text-sm font-medium">{identityLabel}</div>
                 <div className="text-xs text-muted-foreground">

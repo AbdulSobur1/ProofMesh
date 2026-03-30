@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { conversationParticipantSelect, toConversationRecord, toMessageRecord } from '@/lib/services/messages'
+import { createNotification } from '@/lib/services/notifications'
 
 const sendMessageSchema = z.object({
   body: z.string().trim().min(1).max(2000),
@@ -96,6 +97,22 @@ export async function POST(
     const body = await request.json()
     const input = sendMessageSchema.parse(body)
 
+    const sender = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: {
+        username: true,
+      },
+    })
+
+    const participantIds = await prisma.conversationParticipant.findMany({
+      where: {
+        conversationId: params.conversationId,
+      },
+      select: {
+        userId: true,
+      },
+    })
+
     const message = await prisma.$transaction(async (tx) => {
       const createdMessage = await tx.message.create({
         data: {
@@ -121,6 +138,21 @@ export async function POST(
 
       return createdMessage
     })
+
+    await Promise.all(
+      participantIds
+        .filter((participant) => participant.userId !== currentUserId)
+        .map((participant) =>
+          createNotification({
+            userId: participant.userId,
+            actorId: currentUserId,
+            type: 'message_received',
+            title: 'New message',
+            body: `@${sender?.username ?? 'Someone'} sent you a message.`,
+            link: `/messages?user=${encodeURIComponent(sender?.username ?? '')}`,
+          })
+        )
+    )
 
     return NextResponse.json({ message: toMessageRecord(message) })
   } catch (error) {

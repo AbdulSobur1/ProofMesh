@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { toConnectionRecord } from '@/lib/services/network'
+import { createNotification } from '@/lib/services/notifications'
 
 const actionSchema = z.object({
   action: z.enum(['accept', 'decline', 'cancel']),
@@ -72,6 +73,15 @@ export async function PATCH(
           respondedAt: new Date(),
         },
         include: connectionInclude,
+      })
+
+      await createNotification({
+        userId: accepted.requester.id,
+        actorId: currentUserId,
+        type: 'connection_accepted',
+        title: 'Connection request accepted',
+        body: `@${accepted.recipient.username} accepted your connection request.`,
+        link: `/profile/${encodeURIComponent(accepted.recipient.username)}`,
       })
 
       return NextResponse.json({ connection: toConnectionRecord(accepted) })

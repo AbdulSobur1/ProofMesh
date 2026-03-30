@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { JobApplicationsResponse } from '@/lib/types'
 import { toJobApplicationDto, toJobPostDto } from '@/lib/services/jobs'
+import { createNotification } from '@/lib/services/notifications'
 
 const applySchema = z.object({
   note: z.string().trim().max(1200).optional().default(''),
@@ -138,6 +139,15 @@ export async function POST(
         status: 'submitted',
       },
       include: applicantInclude,
+    })
+
+    await createNotification({
+      userId: job.recruiterId,
+      actorId: applicantId,
+      type: 'job_application_submitted',
+      title: 'New job application',
+      body: `@${application.applicant.username} applied to ${job.title}.`,
+      link: `/discover/jobs`,
     })
 
     return NextResponse.json({

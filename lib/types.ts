@@ -152,6 +152,41 @@ export type MeResponse = {
   user: SessionUser | null
 }
 
+export type NotificationType =
+  | 'connection_request'
+  | 'connection_accepted'
+  | 'message_received'
+  | 'post_liked'
+  | 'post_commented'
+  | 'job_application_submitted'
+  | 'job_application_status'
+
+export type NotificationActor = {
+  id: string
+  username: string
+  displayName: string | null
+  headline: string | null
+  avatarUrl: string | null
+  currentRole: string | null
+  currentCompany: string | null
+} | null
+
+export type NotificationRecord = {
+  id: string
+  type: NotificationType
+  title: string
+  body: string
+  link: string | null
+  readAt: string | null
+  createdAt: string
+  actor: NotificationActor
+}
+
+export type NotificationsResponse = {
+  notifications: NotificationRecord[]
+  unreadCount: number
+}
+
 export type ConnectionStatus = 'none' | 'pending_incoming' | 'pending_outgoing' | 'connected'
 
 export type ConnectionPreviewUser = {

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { conversationParticipantSelect, toConversationRecord } from '@/lib/services/messages'
+import { createNotification } from '@/lib/services/notifications'
 
 const createConversationSchema = z.object({
   targetUsername: z.string().trim().min(1),
@@ -187,6 +188,17 @@ export async function POST(request: Request) {
             },
           },
         })
+
+    await createNotification({
+      userId: targetUser.id,
+      actorId: currentUserId,
+      type: 'message_received',
+      title: 'New message',
+      body: `@${conversation.participants.find((participant) => participant.user.id === currentUserId)?.user.username ?? 'Someone'} sent you a message.`,
+      link: `/messages?user=${encodeURIComponent(
+        conversation.participants.find((participant) => participant.user.id === currentUserId)?.user.username ?? ''
+      )}`,
+    })
 
     return NextResponse.json({
       conversation: toConversationRecord(conversation, currentUserId),
