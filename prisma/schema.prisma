@@ -31,6 +31,7 @@ model User {
   receivedConnections Connection[]     @relation("ConnectionRecipient")
   conversationMemberships ConversationParticipant[]
   sentMessages        Message[]
+  posts               Post[]
   savedCandidates     SavedCandidate[] @relation("RecruiterSavedCandidates")
   candidateShortlists SavedCandidate[] @relation("CandidateSavedByRecruiters")
   jobs                JobPost[]
@@ -87,6 +88,22 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@index([senderId, createdAt])
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  body        String
+  postType    String   @default("text")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  proofId     String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proof       Proof?   @relation(fields: [proofId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([proofId])
+  @@index([createdAt])
 }
 
 model WorkExperience {
@@ -163,6 +180,7 @@ model Proof {
   userId                 String
   user                   User               @relation(fields: [userId], references: [id])
   endorsements           ProofEndorsement[]
+  posts                  Post[]
 
   @@index([userId])
   @@index([createdAt])

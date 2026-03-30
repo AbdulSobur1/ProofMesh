@@ -227,6 +227,31 @@ export type ConversationThreadResponse = {
   messages: MessageRecord[]
 }
 
+export type FeedPostType = 'text' | 'proof_share'
+
+export type FeedAuthor = {
+  id: string
+  username: string
+  displayName: string | null
+  headline: string | null
+  avatarUrl: string | null
+  currentRole: string | null
+  currentCompany: string | null
+}
+
+export type FeedPost = {
+  id: string
+  body: string
+  postType: FeedPostType
+  createdAt: string
+  author: FeedAuthor
+  proof: Proof | null
+}
+
+export type FeedResponse = {
+  posts: FeedPost[]
+}
+
 export type EditWorkExperienceInput = {
   id: string
   title: string

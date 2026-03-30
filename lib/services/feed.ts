@@ -1,0 +1,90 @@
+import { FeedPost, Proof } from '@/lib/types'
+import { parseTags } from '@/lib/services/tags'
+import { parseVerificationSignals } from '@/lib/services/verification'
+
+const toProof = (proof: {
+  id: string
+  title: string
+  description: string
+  link: string | null
+  profession: string
+  proofType: string
+  outcomeSummary: string | null
+  score: number
+  feedback: string | null
+  tags: string | null
+  txHash: string
+  verificationStatus: string
+  verificationConfidence: number
+  verificationSignals: string
+  verifiedAt: Date | null
+  createdAt: Date
+}): Proof => ({
+  id: proof.id,
+  title: proof.title,
+  description: proof.description,
+  link: proof.link,
+  profession: proof.profession,
+  proofType: proof.proofType,
+  outcomeSummary: proof.outcomeSummary,
+  score: proof.score,
+  feedback: proof.feedback,
+  tags: parseTags(proof.tags),
+  txHash: proof.txHash,
+  verificationStatus: proof.verificationStatus,
+  verificationConfidence: proof.verificationConfidence,
+  verificationSignals: parseVerificationSignals(proof.verificationSignals),
+  verifiedAt: proof.verifiedAt?.toISOString() ?? null,
+  endorsements: [],
+  endorsementCount: 0,
+  createdAt: proof.createdAt.toISOString(),
+})
+
+export const toFeedPost = (post: {
+  id: string
+  body: string
+  postType: string
+  createdAt: Date
+  user: {
+    id: string
+    username: string
+    displayName: string | null
+    headline: string | null
+    avatarUrl: string | null
+    currentRole: string | null
+    currentCompany: string | null
+  }
+  proof: {
+    id: string
+    title: string
+    description: string
+    link: string | null
+    profession: string
+    proofType: string
+    outcomeSummary: string | null
+    score: number
+    feedback: string | null
+    tags: string | null
+    txHash: string
+    verificationStatus: string
+    verificationConfidence: number
+    verificationSignals: string
+    verifiedAt: Date | null
+    createdAt: Date
+  } | null
+}): FeedPost => ({
+  id: post.id,
+  body: post.body,
+  postType: post.postType === 'proof_share' ? 'proof_share' : 'text',
+  createdAt: post.createdAt.toISOString(),
+  author: {
+    id: post.user.id,
+    username: post.user.username,
+    displayName: post.user.displayName,
+    headline: post.user.headline,
+    avatarUrl: post.user.avatarUrl,
+    currentRole: post.user.currentRole,
+    currentCompany: post.user.currentCompany,
+  },
+  proof: post.proof ? toProof(post.proof) : null,
+})

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, BookmarkCheck, BriefcaseBusiness, CheckSquare, Compass, Mail, Plus, Target, User, Users } from 'lucide-react'
+import { BarChart3, BookmarkCheck, BriefcaseBusiness, CheckSquare, Compass, Mail, Newspaper, Plus, Target, User, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useProofs } from '@/lib/proof-context'
 
@@ -51,6 +51,11 @@ export function Sidebar() {
       href: '/messages',
       label: 'Messages',
       icon: Mail,
+    },
+    {
+      href: '/feed',
+      label: 'Feed',
+      icon: Newspaper,
     },
     {
       href: profileHref,

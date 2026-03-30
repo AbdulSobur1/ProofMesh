@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { ArrowRight, Sparkles, ShieldCheck, Layers3 } from 'lucide-react'
+import { ArrowRight, Newspaper, Sparkles, ShieldCheck, Layers3 } from 'lucide-react'
 import { useProofs } from '@/lib/proof-context'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
@@ -48,6 +48,12 @@ export default function DashboardPage() {
                 <Button variant="outline" asChild>
                   <Link href={currentUser ? `/profile/${encodeURIComponent(currentUser.username)}` : '/login'}>
                     Open profile
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/feed" className="gap-2">
+                    <Newspaper className="size-4" />
+                    Open feed
                   </Link>
                 </Button>
               </div>
