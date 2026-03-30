@@ -7,6 +7,8 @@ import { createNotification } from '@/lib/services/notifications'
 
 const updateSchema = z.object({
   status: z.enum(['submitted', 'reviewing', 'shortlisted', 'rejected']),
+  recruiterNotes: z.string().trim().max(2000).optional(),
+  interviewStage: z.enum(['application_review', 'intro_call', 'skills_interview', 'final_interview', 'offer', 'hired']).nullable().optional(),
 })
 
 const applicantInclude = {
@@ -86,17 +88,26 @@ export async function PATCH(
       },
       data: {
         status: input.status,
+        recruiterNotes: input.recruiterNotes ?? existingApplication.recruiterNotes,
+        interviewStage: input.interviewStage === undefined ? existingApplication.interviewStage : input.interviewStage,
       },
       include: applicantInclude,
     })
 
-    if (existingApplication.status !== input.status) {
+    if (
+      existingApplication.status !== input.status ||
+      existingApplication.interviewStage !== (input.interviewStage === undefined ? existingApplication.interviewStage : input.interviewStage)
+    ) {
+      const stageLabel = input.interviewStage
+        ? ` Stage: ${input.interviewStage.replaceAll('_', ' ')}.`
+        : ''
+
       await createNotification({
         userId: application.applicant.id,
         actorId: recruiterId,
         type: 'job_application_status',
         title: 'Application status updated',
-        body: `Your application for ${job.title} is now ${input.status}.`,
+        body: `Your application for ${job.title} is now ${input.status}.${stageLabel}`,
         link: '/jobs',
       })
     }

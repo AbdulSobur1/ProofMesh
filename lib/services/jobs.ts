@@ -108,6 +108,8 @@ export const toJobApplicationDto = (application: {
   id: string
   status: string
   note: string | null
+  recruiterNotes: string | null
+  interviewStage: string | null
   createdAt: Date
   updatedAt: Date
   applicant: {
@@ -141,6 +143,8 @@ export const toJobApplicationDto = (application: {
   id: application.id,
   status: application.status as JobApplication['status'],
   note: application.note,
+  recruiterNotes: application.recruiterNotes,
+  interviewStage: application.interviewStage as JobApplication['interviewStage'],
   createdAt: application.createdAt.toISOString(),
   updatedAt: application.updatedAt.toISOString(),
   applicant: {

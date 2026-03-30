@@ -12,7 +12,16 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PROFESSION_LABELS, PROOF_PROFESSIONS, PROOF_TYPE_LABELS, PROOF_TYPES, type ProofProfession, type ProofType } from '@/lib/proof-taxonomy'
-import { CompanyProfile, JobApplication, JobApplicationsResponse, JobMatchResponse, JobPost, JobPostsResponse } from '@/lib/types'
+import { CompanyProfile, JobApplication, JobApplicationsResponse, JobInterviewStage, JobMatchResponse, JobPost, JobPostsResponse } from '@/lib/types'
+
+const INTERVIEW_STAGE_OPTIONS: Array<{ value: JobInterviewStage; label: string }> = [
+  { value: 'application_review', label: 'Application review' },
+  { value: 'intro_call', label: 'Intro call' },
+  { value: 'skills_interview', label: 'Skills interview' },
+  { value: 'final_interview', label: 'Final interview' },
+  { value: 'offer', label: 'Offer' },
+  { value: 'hired', label: 'Hired' },
+]
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<JobPost[]>([])
@@ -26,6 +35,8 @@ export default function JobsPage() {
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [applications, setApplications] = useState<JobApplication[]>([])
+  const [draftNotes, setDraftNotes] = useState<Record<string, string>>({})
+  const [draftStages, setDraftStages] = useState<Record<string, JobInterviewStage | ''>>({})
   const [company, setCompany] = useState<CompanyProfile | null>(null)
   const [form, setForm] = useState({
     title: '',
@@ -111,6 +122,12 @@ export default function JobsPage() {
         if (!response.ok) throw new Error('Failed to load applications')
         const payload = (await response.json()) as JobApplicationsResponse
         setApplications(payload.applications)
+        setDraftNotes(
+          Object.fromEntries(payload.applications.map((application) => [application.id, application.recruiterNotes ?? '']))
+        )
+        setDraftStages(
+          Object.fromEntries(payload.applications.map((application) => [application.id, application.interviewStage ?? '']))
+        )
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Something went wrong')
       } finally {
@@ -181,7 +198,8 @@ export default function JobsPage() {
 
   const updateApplicationStatus = async (
     applicationId: string,
-    status: 'submitted' | 'reviewing' | 'shortlisted' | 'rejected'
+    status: 'submitted' | 'reviewing' | 'shortlisted' | 'rejected',
+    options?: { recruiterNotes?: string; interviewStage?: JobInterviewStage | '' }
   ) => {
     if (!selectedJobId) return
 
@@ -195,7 +213,11 @@ export default function JobsPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ status }),
+          body: JSON.stringify({
+            status,
+            recruiterNotes: options?.recruiterNotes,
+            interviewStage: options?.interviewStage === '' ? null : options?.interviewStage,
+          }),
         }
       )
       const payload = await response.json().catch(() => null)
@@ -478,6 +500,46 @@ export default function JobsPage() {
                                 <p className="mt-2 text-sm leading-6 text-foreground/85">{application.note}</p>
                               </div>
                             ) : null}
+                            <div className="mt-4 rounded-2xl border border-border/60 bg-background/60 p-4">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recruiter pipeline</p>
+                                {application.interviewStage ? (
+                                  <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                                    {INTERVIEW_STAGE_OPTIONS.find((option) => option.value === application.interviewStage)?.label ?? application.interviewStage}
+                                  </Badge>
+                                ) : null}
+                              </div>
+                              <div className="mt-3 grid gap-3">
+                                <select
+                                  value={draftStages[application.id] ?? ''}
+                                  onChange={(event) =>
+                                    setDraftStages((current) => ({
+                                      ...current,
+                                      [application.id]: event.target.value as JobInterviewStage | '',
+                                    }))
+                                  }
+                                  className="h-11 w-full rounded-xl border border-border/60 bg-background/70 px-3 text-sm text-foreground outline-none"
+                                >
+                                  <option value="">No interview stage yet</option>
+                                  {INTERVIEW_STAGE_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <Textarea
+                                  value={draftNotes[application.id] ?? ''}
+                                  onChange={(event) =>
+                                    setDraftNotes((current) => ({
+                                      ...current,
+                                      [application.id]: event.target.value,
+                                    }))
+                                  }
+                                  rows={4}
+                                  placeholder="Private recruiter notes, interview signals, or follow-up context."
+                                />
+                              </div>
+                            </div>
                             {application.selectedProof ? (
                               <div className="mt-4 rounded-2xl border border-border/60 bg-background/60 p-4">
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Attached proof</p>
@@ -496,6 +558,19 @@ export default function JobsPage() {
                             </Button>
                             <Button className="w-full" variant={application.status === 'rejected' ? 'default' : 'outline'} onClick={() => updateApplicationStatus(application.id, 'rejected')} disabled={updatingApplicationId === application.id}>
                               Reject
+                            </Button>
+                            <Button
+                              className="w-full"
+                              variant="outline"
+                              onClick={() =>
+                                updateApplicationStatus(application.id, application.status, {
+                                  recruiterNotes: draftNotes[application.id] ?? '',
+                                  interviewStage: draftStages[application.id] ?? '',
+                                })
+                              }
+                              disabled={updatingApplicationId === application.id}
+                            >
+                              Save pipeline notes
                             </Button>
                             <div className="flex gap-2">
                               <Button asChild variant="outline" className="flex-1">

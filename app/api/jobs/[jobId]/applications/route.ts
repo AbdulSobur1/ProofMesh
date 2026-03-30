@@ -131,12 +131,15 @@ export async function POST(
         jobId: job.id,
         applicantId,
         note: input.note || null,
+        recruiterNotes: null,
+        interviewStage: null,
         selectedProofId: input.selectedProofId || null,
       },
       update: {
         note: input.note || null,
         selectedProofId: input.selectedProofId || null,
         status: 'submitted',
+        interviewStage: null,
       },
       include: applicantInclude,
     })

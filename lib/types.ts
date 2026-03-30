@@ -581,11 +581,14 @@ export type JobPost = {
 }
 
 export type JobApplicationStatus = 'submitted' | 'reviewing' | 'shortlisted' | 'rejected'
+export type JobInterviewStage = 'application_review' | 'intro_call' | 'skills_interview' | 'final_interview' | 'offer' | 'hired'
 
 export type JobApplication = {
   id: string
   status: JobApplicationStatus
   note: string | null
+  recruiterNotes?: string | null
+  interviewStage?: JobInterviewStage | null
   createdAt: string
   updatedAt: string
   applicant: ConnectionPreviewUser

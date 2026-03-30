@@ -450,6 +450,8 @@ model JobApplication {
   id             String   @id @default(cuid())
   status         String   @default("submitted")
   note           String?
+  recruiterNotes String?
+  interviewStage String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   jobId          String
