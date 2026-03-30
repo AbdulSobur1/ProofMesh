@@ -307,7 +307,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
       <div className="absolute inset-0 bg-grid opacity-[0.05] pointer-events-none" />
       <div className="absolute -top-28 left-1/4 h-96 w-96 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
       <Sidebar />
-      <main className="flex-1 md:ml-72">
+      <main className="flex-1 pb-24 md:ml-72 md:pb-0">
         <TopBar />
 
         <div className="px-4 py-8 md:px-8">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Bell, CheckSquare, LogOut, Menu, Sparkles } from 'lucide-react'
+import { Bell, CheckSquare, LogOut, Menu, Sparkles, UserCircle2 } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -128,16 +128,26 @@ export function TopBar() {
               </SheetFooter>
             </SheetContent>
           </Sheet>
-          <div className="hidden md:flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-primary" />
-            <span className="text-sm font-semibold tracking-tight">ProofMesh App</span>
+            <span className="text-sm font-semibold tracking-tight md:text-sm">ProofMesh</span>
           </div>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
           {currentUser ? (
             <>
-              <Button variant="outline" size="sm" asChild className="relative gap-2">
+              <Button variant="outline" size="icon" asChild className="relative shrink-0 md:hidden">
+                <Link href="/notifications" aria-label="Notifications">
+                  <Bell className="size-4" />
+                  {unreadCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  ) : null}
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild className="relative hidden gap-2 md:inline-flex">
                 <Link href="/notifications">
                   <Bell className="size-4" />
                   Notifications
@@ -148,13 +158,17 @@ export function TopBar() {
                   ) : null}
                 </Link>
               </Button>
+              <Link href={currentUser ? `/profile/${encodeURIComponent(currentUser.username)}` : '/login'} className="flex items-center gap-2 rounded-xl border border-border/60 px-2.5 py-1.5 md:hidden">
+                <UserCircle2 className="size-4 text-primary" />
+                <span className="max-w-20 truncate text-xs font-medium text-foreground">{identityLabel}</span>
+              </Link>
               <div className="hidden sm:block text-right">
                 <div className="text-sm font-medium">{identityLabel}</div>
                 <div className="text-xs text-muted-foreground">
                   {currentUser.currentRole || 'Signed in'}
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={signOut} className="gap-2">
+              <Button variant="outline" size="sm" onClick={signOut} className="hidden gap-2 md:inline-flex">
                 <LogOut className="size-4" />
                 Sign out
               </Button>
