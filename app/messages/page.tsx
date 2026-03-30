@@ -103,6 +103,16 @@ function MessagesPageContent() {
         }
         const payload = (await response.json()) as ConversationThreadResponse
         setThread(payload)
+        setConversations((current) =>
+          current.map((conversation) =>
+            conversation.id === selectedConversationId
+              ? {
+                  ...conversation,
+                  unreadCount: 0,
+                }
+              : conversation
+          )
+        )
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Something went wrong')
       } finally {

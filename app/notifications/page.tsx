@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Bell, BriefcaseBusiness, CheckCheck, Mail, MessageCircle, MessageSquareQuote, Settings2, UserPlus } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
@@ -54,6 +54,7 @@ const defaultSettings: NotificationSettings = {
 }
 
 export default function NotificationsPage() {
+  const router = useRouter()
   const [notifications, setNotifications] = useState<NotificationRecord[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [settings, setSettings] = useState<NotificationSettings>(defaultSettings)
@@ -139,12 +140,32 @@ export default function NotificationsPage() {
       if (!response.ok) {
         throw new Error('Failed to update notification')
       }
-      await load()
+      setNotifications((current) =>
+        current.map((notification) =>
+          notification.id === notificationId && !notification.readAt
+            ? {
+                ...notification,
+                readAt: new Date().toISOString(),
+              }
+            : notification
+        )
+      )
+      setUnreadCount((current) => Math.max(0, current - 1))
     } catch (markError) {
       setError(markError instanceof Error ? markError.message : 'Failed to update notification')
     } finally {
       setMarkingId(null)
     }
+  }
+
+  const openNotification = async (notification: NotificationRecord) => {
+    if (!notification.link) return
+
+    if (!notification.readAt) {
+      await markOneRead(notification.id)
+    }
+
+    router.push(notification.link)
   }
 
   const updateSetting = async (key: keyof NotificationSettings, value: boolean) => {
@@ -296,17 +317,13 @@ export default function NotificationsPage() {
                           </div>
                           <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
                             {notification.link ? (
-                              <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-                                <Link
-                                  href={notification.link}
-                                  onClick={() => {
-                                    if (isUnread) {
-                                      void markOneRead(notification.id)
-                                    }
-                                  }}
-                                >
-                                  Open
-                                </Link>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full sm:w-auto"
+                                onClick={() => void openNotification(notification)}
+                              >
+                                Open
                               </Button>
                             ) : null}
                             {isUnread ? (

@@ -312,7 +312,7 @@ export async function GET(request: Request) {
     .filter((proof) => proof.searchBlob.includes(query))
     .filter((proof) => !proofTypeFilter || proof.proofType.toLowerCase() === proofTypeFilter)
     .filter((proof) => !sourceCategoryFilter || (proof.sourceCategory ?? 'general').toLowerCase() === sourceCategoryFilter)
-    .filter((proof) => !verifiedOnly || proof.verificationStatus !== 'needs_review')
+    .filter((proof) => !verifiedOnly || proof.verificationStatus === 'verified')
     .filter((proof) => proof.verificationConfidence >= minConfidence)
     .sort((left, right) => right.matchScore - left.matchScore)
     .slice(0, 8)
