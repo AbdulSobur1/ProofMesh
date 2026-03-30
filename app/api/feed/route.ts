@@ -38,6 +38,7 @@ const postInclude = {
       verificationStatus: true,
       verificationConfidence: true,
       verificationSignals: true,
+      moderationStatus: true,
       verifiedAt: true,
       createdAt: true,
     },
@@ -91,6 +92,9 @@ export async function GET(request: Request) {
       userId: {
         in: networkUserIds,
       },
+      moderationStatus: {
+        not: 'removed',
+      },
     },
     include: postInclude,
     orderBy: { createdAt: 'desc' },
@@ -122,7 +126,7 @@ export async function POST(request: Request) {
         where: { id: input.proofId },
       })
 
-      if (!proof || proof.userId !== currentUserId) {
+      if (!proof || proof.userId !== currentUserId || proof.moderationStatus === 'removed') {
         return NextResponse.json({ error: 'You can only share your own proofs' }, { status: 403 })
       }
     }

@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-const authenticatedPages = ['/dashboard', '/discover', '/search', '/submit', '/profile', '/proof', '/network', '/messages', '/notifications', '/feed', '/jobs', '/company']
+const authenticatedPages = ['/dashboard', '/discover', '/search', '/submit', '/profile', '/proof', '/network', '/messages', '/notifications', '/feed', '/jobs', '/company', '/admin']
 const publicAuthPages = ['/', '/login', '/signup']
-const protectedApiPrefixes = ['/api/discovery', '/api/search', '/api/jobs', '/api/profile', '/api/proofs', '/api/reputation', '/api/network', '/api/messages', '/api/notifications', '/api/feed', '/api/companies', '/api/analytics']
+const protectedApiPrefixes = ['/api/discovery', '/api/search', '/api/jobs', '/api/profile', '/api/proofs', '/api/reputation', '/api/network', '/api/messages', '/api/notifications', '/api/feed', '/api/companies', '/api/analytics', '/api/reports', '/api/admin']
 const authApiPrefixes = ['/api/auth']
 
 function isMatch(pathname: string, prefixes: string[]) {
@@ -52,6 +52,7 @@ export const config = {
     '/login/:path*',
     '/signup/:path*',
     '/dashboard/:path*',
+    '/admin/:path*',
     '/discover/:path*',
     '/search/:path*',
     '/network/:path*',
@@ -66,6 +67,8 @@ export const config = {
     '/api/discovery/:path*',
     '/api/search/:path*',
     '/api/analytics/:path*',
+    '/api/reports/:path*',
+    '/api/admin/:path*',
     '/api/jobs/:path*',
     '/api/network/:path*',
     '/api/messages/:path*',

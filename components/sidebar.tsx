@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Bell, BookmarkCheck, BriefcaseBusiness, Building2, CheckSquare, Compass, Mail, Newspaper, Plus, Search, Target, User, Users } from 'lucide-react'
+import { BarChart3, Bell, BookmarkCheck, BriefcaseBusiness, Building2, CheckSquare, Compass, Mail, Newspaper, Plus, Search, ShieldAlert, Target, User, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useProofs } from '@/lib/proof-context'
 
@@ -83,6 +83,14 @@ export function Sidebar() {
       icon: User,
     },
   ]
+
+  if (currentUser?.isAdmin) {
+    links.push({
+      href: '/admin/moderation',
+      label: 'Moderation',
+      icon: ShieldAlert,
+    })
+  }
 
   return (
     <aside className="fixed left-0 top-0 hidden h-screen w-72 flex-col border-r border-border/60 bg-sidebar/90 backdrop-blur md:flex">

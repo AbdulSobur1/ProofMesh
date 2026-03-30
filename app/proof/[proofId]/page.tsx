@@ -7,6 +7,7 @@ import {
   Calendar,
   CheckCircle2,
   ExternalLink,
+  Flag,
   Hash,
   MessageSquareQuote,
   ShieldCheck,
@@ -53,6 +54,9 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isReporting, setIsReporting] = useState(false)
+  const [reportReason, setReportReason] = useState<'spam' | 'abuse' | 'fraud' | 'misleading' | 'copyright' | 'other'>('fraud')
+  const [reportDetails, setReportDetails] = useState('')
   const [form, setForm] = useState({
     verifierName: '',
     verifierRole: '',
@@ -92,6 +96,7 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
   const professionLabel = proof ? PROFESSION_LABELS[proof.profession as ProofProfession] ?? proof.profession : ''
   const proofTypeLabel = proof ? PROOF_TYPE_LABELS[proof.proofType as ProofType] ?? proof.proofType : ''
   const verificationMeta = proof ? getVerificationMeta(proof.verificationStatus) : null
+  const moderationLabel = proof?.moderationStatus === 'removed' ? 'Removed' : proof?.moderationStatus === 'under_review' ? 'Under review' : null
 
   const relationshipLabel = useMemo(
     () => Object.fromEntries(RELATIONSHIP_OPTIONS.map((option) => [option.value, option.label])) as Record<PeerVerificationRelationship, string>,
@@ -131,6 +136,39 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
       setFormError(submitError instanceof Error ? submitError.message : 'Failed to submit verification note')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleReport = async () => {
+    if (!proof) return
+
+    setIsReporting(true)
+    setFormError(null)
+    try {
+      const response = await fetch('/api/reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          targetType: 'proof',
+          targetId: proof.id,
+          reason: reportReason,
+          details: reportDetails,
+        }),
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to submit report')
+      }
+
+      setReportDetails('')
+      await load()
+    } catch (submitError) {
+      setFormError(submitError instanceof Error ? submitError.message : 'Failed to submit report')
+    } finally {
+      setIsReporting(false)
     }
   }
 
@@ -179,6 +217,11 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                         <ShieldCheck className="mr-1 size-3.5" />
                         {verificationMeta?.label ?? 'Trust signal'}
                       </Badge>
+                      {moderationLabel ? (
+                        <Badge variant="secondary" className="border border-amber-500/20 bg-amber-500/10 text-amber-300">
+                          {moderationLabel}
+                        </Badge>
+                      ) : null}
                       <Badge variant="secondary" className="border border-primary/20 bg-primary/10 text-primary">
                         Score {proof.score}/10
                       </Badge>
@@ -326,6 +369,39 @@ export default function ProofDetailPage({ params }: ProofDetailPageProps) {
                       ))}
                     </div>
                   )}
+                </Card>
+
+                <Card className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.22)] backdrop-blur">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                    <Flag className="size-4 text-primary" />
+                    Report Proof
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Flag spam, fraud, abuse, or misleading work so it can be reviewed by moderation.
+                  </p>
+                  <div className="mt-5 space-y-4">
+                    <select
+                      value={reportReason}
+                      onChange={(event) => setReportReason(event.target.value as typeof reportReason)}
+                      className="flex h-11 w-full rounded-xl border border-input bg-card/70 px-4 py-2 text-sm text-foreground outline-none"
+                    >
+                      <option value="fraud">Fraud</option>
+                      <option value="misleading">Misleading</option>
+                      <option value="spam">Spam</option>
+                      <option value="abuse">Abuse</option>
+                      <option value="copyright">Copyright</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <Textarea
+                      value={reportDetails}
+                      onChange={(event) => setReportDetails(event.target.value)}
+                      rows={4}
+                      placeholder="Add any context that would help a moderator review this proof."
+                    />
+                    <Button onClick={handleReport} disabled={isReporting} className="w-full">
+                      {isReporting ? 'Submitting report...' : 'Report proof'}
+                    </Button>
+                  </div>
                 </Card>
               </div>
 

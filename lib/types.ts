@@ -44,6 +44,7 @@ export type Proof = {
   verificationStatus: string
   verificationConfidence: number
   verificationSignals: VerificationSignal[]
+  moderationStatus?: 'active' | 'under_review' | 'removed'
   verifiedAt: string | null
   endorsements: PeerVerification[]
   endorsementCount: number
@@ -145,6 +146,7 @@ export type SessionUser = {
   currentRole: string | null
   currentCompany: string | null
   createdAt: string
+  isAdmin?: boolean
   email?: string | null
   walletAddress?: string | null
 }
@@ -282,6 +284,7 @@ export type FeedPost = {
   createdAt: string
   author: FeedAuthor
   proof: Proof | null
+  moderationStatus?: 'active' | 'under_review' | 'removed'
   likeCount: number
   commentCount: number
   likedByViewer: boolean
@@ -333,6 +336,34 @@ export type CompanyAnalytics = {
 export type CompanyViewerState = {
   isFollowing: boolean
   canManage: boolean
+}
+
+export type ModerationStatus = 'open' | 'reviewed' | 'dismissed' | 'actioned'
+
+export type ReportTargetType = 'proof' | 'post'
+
+export type ReportReason = 'spam' | 'abuse' | 'fraud' | 'misleading' | 'copyright' | 'other'
+
+export type ReportRecord = {
+  id: string
+  targetType: ReportTargetType
+  targetId: string
+  reason: ReportReason
+  details: string | null
+  status: ModerationStatus
+  createdAt: string
+  resolvedAt: string | null
+  reporter: ConnectionPreviewUser
+}
+
+export type ModerationQueueItem = {
+  report: ReportRecord
+  proof: Proof | null
+  post: FeedPost | null
+}
+
+export type ModerationQueueResponse = {
+  items: ModerationQueueItem[]
 }
 
 export type EditWorkExperienceInput = {

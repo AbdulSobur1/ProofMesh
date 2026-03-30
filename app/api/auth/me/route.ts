@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { SESSION_COOKIE } from '@/lib/auth'
 import { verifySessionToken } from '@/lib/services/session'
+import { isAdminUsername } from '@/lib/services/admin'
 
 export async function GET(request: Request) {
   const toSessionUser = (user: {
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
     currentRole: user.currentRole,
     currentCompany: user.currentCompany,
     createdAt: user.createdAt.toISOString(),
+    isAdmin: isAdminUsername(user.username),
   })
 
   const token = await getCurrentToken(request)

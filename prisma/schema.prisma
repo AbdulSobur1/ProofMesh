@@ -47,6 +47,7 @@ model User {
   savedSearches        SavedSearch[]
   companyFollows       CompanyFollow[]
   companyPosts         CompanyPost[]   @relation("CompanyPostAuthor")
+  reports              Report[]
 }
 
 model Company {
@@ -212,10 +213,28 @@ model CompanyPost {
   @@index([authorId, createdAt])
 }
 
+model Report {
+  id         String   @id @default(cuid())
+  targetType String
+  targetId   String
+  reason     String
+  details    String?
+  status     String   @default("open")
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId, status])
+  @@index([reporterId, createdAt])
+  @@index([status, createdAt])
+}
+
 model Post {
   id          String   @id @default(cuid())
   body        String
   postType    String   @default("text")
+  moderationStatus String @default("active")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
@@ -324,6 +343,7 @@ model Proof {
   verificationStatus     String             @default("needs_review")
   verificationConfidence Int                @default(50)
   verificationSignals    String             @default("[]")
+  moderationStatus       String             @default("active")
   verifiedAt             DateTime?
   createdAt              DateTime           @default(now())
   userId                 String

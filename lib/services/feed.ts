@@ -17,6 +17,7 @@ const toProof = (proof: {
   verificationStatus: string
   verificationConfidence: number
   verificationSignals: string
+  moderationStatus: string
   verifiedAt: Date | null
   createdAt: Date
 }): Proof => ({
@@ -34,6 +35,7 @@ const toProof = (proof: {
   verificationStatus: proof.verificationStatus,
   verificationConfidence: proof.verificationConfidence,
   verificationSignals: parseVerificationSignals(proof.verificationSignals),
+  moderationStatus: proof.moderationStatus as Proof['moderationStatus'],
   verifiedAt: proof.verifiedAt?.toISOString() ?? null,
   endorsements: [],
   endorsementCount: 0,
@@ -44,6 +46,7 @@ export const toFeedPost = (post: {
   id: string
   body: string
   postType: string
+  moderationStatus: string
   createdAt: Date
   user: {
     id: string
@@ -78,6 +81,7 @@ export const toFeedPost = (post: {
   id: post.id,
   body: post.body,
   postType: post.postType === 'proof_share' ? 'proof_share' : 'text',
+  moderationStatus: post.moderationStatus as FeedPost['moderationStatus'],
   createdAt: post.createdAt.toISOString(),
   author: {
     id: post.user.id,

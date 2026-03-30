@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Heart, MessageCircle, Newspaper, Send } from 'lucide-react'
+import { Flag, Heart, MessageCircle, Newspaper, Send } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -35,6 +35,7 @@ export default function FeedPage() {
   const [openCommentsPostId, setOpenCommentsPostId] = useState<string | null>(null)
   const [commentsByPostId, setCommentsByPostId] = useState<Record<string, FeedComment[]>>({})
   const [commentDraftByPostId, setCommentDraftByPostId] = useState<Record<string, string>>({})
+  const [reportingPostId, setReportingPostId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -158,6 +159,34 @@ export default function FeedPage() {
       setError(commentError instanceof Error ? commentError.message : 'Failed to add comment')
     } finally {
       setEngagingPostId(null)
+    }
+  }
+
+  const reportPost = async (postId: string) => {
+    setReportingPostId(postId)
+    setError(null)
+    try {
+      const response = await fetch('/api/reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          targetType: 'post',
+          targetId: postId,
+          reason: 'misleading',
+          details: 'Reported from feed for moderation review.',
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error ?? 'Failed to report post')
+      }
+      await load()
+    } catch (reportError) {
+      setError(reportError instanceof Error ? reportError.message : 'Failed to report post')
+    } finally {
+      setReportingPostId(null)
     }
   }
 
@@ -289,6 +318,11 @@ export default function FeedPage() {
                               <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
                                 {post.postType === 'proof_share' ? 'Proof share' : 'Text update'}
                               </Badge>
+                              {post.moderationStatus === 'under_review' ? (
+                                <Badge variant="secondary" className="border border-amber-500/20 bg-amber-500/10 text-amber-400">
+                                  Under review
+                                </Badge>
+                              ) : null}
                             </div>
                             <p className="mt-2 text-sm text-muted-foreground">
                               {post.author.headline || [post.author.currentRole, post.author.currentCompany].filter(Boolean).join(' at ') || 'Proof-backed professional'}
@@ -326,6 +360,16 @@ export default function FeedPage() {
                           >
                             <MessageCircle className="size-4" />
                             {post.commentCount} comment{post.commentCount === 1 ? '' : 's'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => reportPost(post.id)}
+                            disabled={reportingPostId === post.id}
+                          >
+                            <Flag className="size-4" />
+                            Report
                           </Button>
                         </div>
 

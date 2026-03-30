@@ -39,6 +39,7 @@ export function ProofCard({ proof }: ProofCardProps) {
   const professionLabel = PROFESSION_LABELS[proof.profession as ProofProfession] ?? proof.profession
   const proofTypeLabel = PROOF_TYPE_LABELS[proof.proofType as ProofType] ?? proof.proofType
   const verificationMeta = getVerificationMeta(proof.verificationStatus)
+  const moderationLabel = proof.moderationStatus === 'removed' ? 'Removed' : proof.moderationStatus === 'under_review' ? 'Under review' : null
 
   return (
     <Card className="group rounded-[2rem] border border-border/60 p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_20px_50px_rgba(2,8,23,0.08)]">
@@ -58,6 +59,11 @@ export function ProofCard({ proof }: ProofCardProps) {
                 <ShieldCheck className="mr-1 size-3.5" />
                 {verificationMeta.label}
               </Badge>
+              {moderationLabel ? (
+                <Badge variant="secondary" className="rounded-full border border-amber-500/20 bg-amber-500/10 text-amber-400 normal-case tracking-normal">
+                  {moderationLabel}
+                </Badge>
+              ) : null}
             </div>
             <h3 className="mt-3 text-lg font-semibold text-foreground transition-colors group-hover:text-primary">
               {proof.title}
