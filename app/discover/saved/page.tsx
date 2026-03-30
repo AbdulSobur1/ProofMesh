@@ -101,6 +101,11 @@ export default function SavedCandidatesPage() {
                     Back to discovery
                   </Link>
                 </Button>
+                <Button asChild>
+                  <Link href="/discover/match" className="gap-2">
+                    Match to roles
+                  </Link>
+                </Button>
               </div>
             </div>
           </section>

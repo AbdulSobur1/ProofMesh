@@ -4,12 +4,14 @@ import { prisma } from '@/lib/db'
 import { getCurrentToken } from '@/lib/auth-options'
 import { calculateReputation } from '@/lib/services/reputation'
 import { getPrimaryProfession, getStrongestProof } from '@/lib/services/discovery'
+import { buildRoleMatches } from '@/lib/services/role-matching'
+import { ROLE_PROFILES, ROLE_SLUGS } from '@/lib/role-taxonomy'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
-import { DiscoveryCandidate, DiscoveryResponse, PeerVerification, Proof } from '@/lib/types'
+import { DiscoveryCandidate, PeerVerification, Proof, RoleMatchResponse } from '@/lib/types'
 
-const payloadSchema = z.object({
-  candidateId: z.string().min(1),
+const querySchema = z.object({
+  role: z.enum(ROLE_SLUGS),
 })
 
 const toEndorsement = (endorsement: {
@@ -77,7 +79,7 @@ const toProof = (proof: {
   createdAt: proof.createdAt.toISOString(),
 })
 
-const mapCandidate = (entry: {
+const toCandidate = (entry: {
   createdAt: Date
   candidate: {
     id: string
@@ -137,6 +139,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const url = new URL(request.url)
+  const parsed = querySchema.safeParse({ role: url.searchParams.get('role') })
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'A valid role is required' }, { status: 400 })
+  }
+
   const saved = await prisma.savedCandidate.findMany({
     where: { recruiterId },
     orderBy: { createdAt: 'desc' },
@@ -156,71 +165,22 @@ export async function GET(request: Request) {
     },
   })
 
-  const response: DiscoveryResponse = {
-    candidates: saved.map(mapCandidate).filter((candidate) => candidate.reputation.totalProofs > 0),
+  const candidates = saved.map(toCandidate).filter((candidate) => candidate.reputation.totalProofs > 0)
+  const matches = buildRoleMatches(parsed.data.role, candidates)
+  const role = ROLE_PROFILES[parsed.data.role]
+
+  const response: RoleMatchResponse = {
+    role: {
+      slug: parsed.data.role,
+      label: role.label,
+      description: role.description,
+      profession: role.profession,
+      targetTags: [...role.targetTags],
+      preferredProofTypes: [...role.preferredProofTypes],
+      minScore: role.minScore,
+    },
+    matches,
   }
 
   return NextResponse.json(response)
 }
-
-export async function POST(request: Request) {
-  const token = await getCurrentToken(request)
-  const recruiterId = token?.sub
-
-  if (!recruiterId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  try {
-    const body = await request.json()
-    const input = payloadSchema.parse(body)
-
-    if (input.candidateId === recruiterId) {
-      return NextResponse.json({ error: 'You cannot save your own profile' }, { status: 400 })
-    }
-
-    await prisma.savedCandidate.upsert({
-      where: {
-        recruiterId_candidateId: {
-          recruiterId,
-          candidateId: input.candidateId,
-        },
-      },
-      update: {},
-      create: {
-        recruiterId,
-        candidateId: input.candidateId,
-      },
-    })
-
-    return NextResponse.json({ ok: true })
-  } catch {
-    return NextResponse.json({ error: 'Invalid save payload' }, { status: 400 })
-  }
-}
-
-export async function DELETE(request: Request) {
-  const token = await getCurrentToken(request)
-  const recruiterId = token?.sub
-
-  if (!recruiterId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  try {
-    const body = await request.json()
-    const input = payloadSchema.parse(body)
-
-    await prisma.savedCandidate.deleteMany({
-      where: {
-        recruiterId,
-        candidateId: input.candidateId,
-      },
-    })
-
-    return NextResponse.json({ ok: true })
-  } catch {
-    return NextResponse.json({ error: 'Invalid remove payload' }, { status: 400 })
-  }
-}
-

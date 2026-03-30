@@ -91,6 +91,7 @@ export type DiscoveryCandidate = {
   primaryProfession: string | null
   reputation: Reputation
   topTags: string[]
+  proofTypes: string[]
   strongestProof: {
     id: string
     title: string
@@ -103,3 +104,33 @@ export type DiscoveryCandidate = {
 export type DiscoveryResponse = {
   candidates: DiscoveryCandidate[]
 }
+
+export type RoleMatchBreakdown = {
+  profession: number
+  skillTags: number
+  proofTypes: number
+  trust: number
+  proofQuality: number
+}
+
+export type RoleMatch = {
+  candidate: DiscoveryCandidate
+  matchScore: number
+  matchedTags: string[]
+  matchedProofTypes: string[]
+  breakdown: RoleMatchBreakdown
+}
+
+export type RoleMatchResponse = {
+  role: {
+    slug: string
+    label: string
+    description: string
+    profession: string
+    targetTags: string[]
+    preferredProofTypes: string[]
+    minScore: number
+  }
+  matches: RoleMatch[]
+}
+

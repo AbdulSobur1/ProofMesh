@@ -113,6 +113,7 @@ export async function GET(request: Request) {
         primaryProfession: getPrimaryProfession(proofs),
         reputation,
         topTags: reputation.tagFrequency.slice(0, 4).map((item) => item.tag),
+        proofTypes: Array.from(new Set(proofs.map((proof) => proof.proofType))),
         strongestProof: getStrongestProof(proofs),
         isSaved: Boolean(shortlistRecord),
         savedAt: shortlistRecord?.createdAt?.toISOString() ?? null,
@@ -123,3 +124,4 @@ export async function GET(request: Request) {
   const response: DiscoveryResponse = { candidates }
   return NextResponse.json(response)
 }
+
