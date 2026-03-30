@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Building2, Save } from 'lucide-react'
+import { Building2, Newspaper, Save, Users } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CompanyProfile } from '@/lib/types'
+import { CompanyResponse, CompanyProfile } from '@/lib/types'
 
 type CompanyForm = {
   name: string
@@ -36,6 +36,7 @@ const emptyForm: CompanyForm = {
 
 export default function CompanyPage() {
   const [company, setCompany] = useState<CompanyProfile | null>(null)
+  const [companyData, setCompanyData] = useState<CompanyResponse | null>(null)
   const [form, setForm] = useState<CompanyForm>(emptyForm)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -73,6 +74,25 @@ export default function CompanyPage() {
 
     load()
   }, [])
+
+  useEffect(() => {
+    const loadCompanyData = async () => {
+      if (!company) {
+        setCompanyData(null)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/companies/${encodeURIComponent(company.slug)}`, { cache: 'no-store' })
+        if (!response.ok) return
+        setCompanyData((await response.json()) as CompanyResponse)
+      } catch {
+        setCompanyData(null)
+      }
+    }
+
+    void loadCompanyData()
+  }, [company])
 
   const save = async () => {
     setIsSaving(true)
@@ -170,6 +190,24 @@ export default function CompanyPage() {
               {company ? (
                 <div className="mt-4 space-y-4 text-sm leading-6 text-muted-foreground">
                   <p>Your company page is live and can be attached to jobs automatically.</p>
+                  {companyData ? (
+                    <div className="grid gap-3">
+                      <div className="rounded-2xl border border-border/60 bg-background/50 p-4">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                          <Users className="size-4 text-primary" />
+                          Followers
+                        </div>
+                        <p className="mt-2 text-2xl font-semibold text-foreground">{companyData.analytics.followerCount}</p>
+                      </div>
+                      <div className="rounded-2xl border border-border/60 bg-background/50 p-4">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                          <Newspaper className="size-4 text-primary" />
+                          Company posts
+                        </div>
+                        <p className="mt-2 text-2xl font-semibold text-foreground">{companyData.analytics.postCount}</p>
+                      </div>
+                    </div>
+                  ) : null}
                   <Button asChild variant="outline" className="w-full">
                     <Link href={`/company/${encodeURIComponent(company.slug)}`}>Open company page</Link>
                   </Button>

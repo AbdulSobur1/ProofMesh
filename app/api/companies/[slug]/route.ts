@@ -42,9 +42,12 @@ const toCompanyDto = (company: {
 })
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { slug: string } }
 ) {
+  const token = await getCurrentToken(request)
+  const currentUserId = token?.sub ?? null
+
   const company = await prisma.company.findUnique({
     where: { slug: params.slug },
     include: {
@@ -54,16 +57,97 @@ export async function GET(
         },
         orderBy: { createdAt: 'desc' },
       },
+      posts: {
+        include: {
+          author: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              headline: true,
+              avatarUrl: true,
+              currentRole: true,
+              currentCompany: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+      followers: currentUserId
+        ? {
+            where: {
+              userId: currentUserId,
+            },
+            take: 1,
+          }
+        : false,
+      members: currentUserId
+        ? {
+            where: {
+              userId: currentUserId,
+            },
+            take: 1,
+          }
+        : false,
     },
   })
 
   if (!company) {
-    return NextResponse.json({ company: null, jobs: [] }, { status: 404 })
+    return NextResponse.json(
+      {
+        company: null,
+        jobs: [],
+        posts: [],
+        analytics: {
+          followerCount: 0,
+          jobCount: 0,
+          postCount: 0,
+        },
+        viewerState: {
+          isFollowing: false,
+          canManage: false,
+        },
+      },
+      { status: 404 }
+    )
   }
+
+  const [followerCount, canManage] = await Promise.all([
+    prisma.companyFollow.count({
+      where: {
+        companyId: company.id,
+      },
+    }),
+    currentUserId
+      ? prisma.companyMember.findFirst({
+          where: {
+            companyId: company.id,
+            userId: currentUserId,
+          },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
+  ])
 
   const response: CompanyResponse = {
     company: toCompanyDto(company),
     jobs: company.jobs.map(toJobPostDto),
+    posts: company.posts.map((post) => ({
+      id: post.id,
+      body: post.body,
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
+      author: post.author,
+    })),
+    analytics: {
+      followerCount,
+      jobCount: company.jobs.length,
+      postCount: company.posts.length,
+    },
+    viewerState: {
+      isFollowing: Array.isArray((company as { followers?: unknown[] }).followers) && ((company as { followers?: unknown[] }).followers?.length ?? 0) > 0,
+      canManage: Boolean(canManage),
+    },
   }
 
   return NextResponse.json(response)

@@ -316,6 +316,25 @@ export type CompanyProfile = {
   updatedAt: string
 }
 
+export type CompanyPostRecord = {
+  id: string
+  body: string
+  createdAt: string
+  updatedAt: string
+  author: ConnectionPreviewUser
+}
+
+export type CompanyAnalytics = {
+  followerCount: number
+  jobCount: number
+  postCount: number
+}
+
+export type CompanyViewerState = {
+  isFollowing: boolean
+  canManage: boolean
+}
+
 export type EditWorkExperienceInput = {
   id: string
   title: string
@@ -529,4 +548,7 @@ export type JobApplicationsResponse = {
 export type CompanyResponse = {
   company: CompanyProfile | null
   jobs: JobPost[]
+  posts: CompanyPostRecord[]
+  analytics: CompanyAnalytics
+  viewerState: CompanyViewerState
 }

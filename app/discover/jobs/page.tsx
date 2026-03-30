@@ -248,6 +248,13 @@ export default function JobsPage() {
                     </Button>
                   </div>
                 )}
+                {company ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/company/${encodeURIComponent(company.slug)}`}>Open company page</Link>
+                    </Button>
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex flex-wrap gap-3">

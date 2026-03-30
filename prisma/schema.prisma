@@ -45,6 +45,8 @@ model User {
   profileViewsReceived ProfileView[]   @relation("ProfileViewProfile")
   profileViewsSent     ProfileView[]   @relation("ProfileViewViewer")
   savedSearches        SavedSearch[]
+  companyFollows       CompanyFollow[]
+  companyPosts         CompanyPost[]   @relation("CompanyPostAuthor")
 }
 
 model Company {
@@ -63,6 +65,8 @@ model Company {
   owner          User            @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members        CompanyMember[]
   jobs           JobPost[]
+  followers      CompanyFollow[]
+  posts          CompanyPost[]
 
   @@index([ownerId])
   @@index([name])
@@ -179,6 +183,33 @@ model SavedSearch {
 
   @@unique([ownerId, query])
   @@index([ownerId, updatedAt])
+}
+
+model CompanyFollow {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  companyId  String
+  userId     String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@index([companyId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model CompanyPost {
+  id         String   @id @default(cuid())
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  companyId  String
+  authorId   String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  author     User     @relation("CompanyPostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@index([authorId, createdAt])
 }
 
 model Post {
