@@ -389,6 +389,36 @@ export type DiscoveryResponse = {
   candidates: DiscoveryCandidate[]
 }
 
+export type SearchProofResult = {
+  id: string
+  title: string
+  description: string
+  profession: string
+  proofType: string
+  score: number
+  tags: string[]
+  verificationStatus: string
+  verificationConfidence: number
+  createdAt: string
+  owner: ConnectionPreviewUser
+}
+
+export type SearchSkillResult = {
+  name: string
+  proofCount: number
+  candidateCount: number
+  topCandidates: string[]
+}
+
+export type SearchResultsResponse = {
+  query: string
+  candidates: DiscoveryCandidate[]
+  companies: CompanyProfile[]
+  jobs: CandidateJobPost[]
+  proofs: SearchProofResult[]
+  skills: SearchSkillResult[]
+}
+
 export type RoleMatchBreakdown = {
   profession: number
   skillTags: number

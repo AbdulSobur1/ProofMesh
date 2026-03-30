@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { calculateReputation } from '@/lib/services/reputation'
-import { getPrimaryProfession, getStrongestProof } from '@/lib/services/discovery'
+import { filterCandidates, getPrimaryProfession, getStrongestProof, sortCandidates } from '@/lib/services/discovery'
 import { parseTags } from '@/lib/services/tags'
 import { parseVerificationSignals } from '@/lib/services/verification'
-import { DiscoveryCandidate, DiscoveryResponse, PeerVerification, Proof } from '@/lib/types'
+import { DiscoveryCandidate, DiscoveryResponse, DiscoverySortMode, PeerVerification, Proof } from '@/lib/types'
 import { getCurrentToken } from '@/lib/auth-options'
 
 const toEndorsement = (endorsement: {
@@ -75,6 +75,15 @@ const toProof = (proof: {
 export async function GET(request: Request) {
   const token = await getCurrentToken(request)
   const recruiterId = token?.sub
+  const { searchParams } = new URL(request.url)
+  const query = searchParams.get('query') ?? ''
+  const profession = searchParams.get('profession') ?? ''
+  const minScore = Number(searchParams.get('minScore') ?? '0') || 0
+  const verifiedOnly = searchParams.get('verifiedOnly') === 'true'
+  const topTag = searchParams.get('topTag') ?? ''
+  const proofType = searchParams.get('proofType') ?? ''
+  const minEndorsements = Number(searchParams.get('minEndorsements') ?? '0') || 0
+  const sortMode = (searchParams.get('sortMode') ?? 'trust') as DiscoverySortMode
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
@@ -121,7 +130,20 @@ export async function GET(request: Request) {
     })
     .filter((candidate) => candidate.reputation.totalProofs > 0)
 
-  const response: DiscoveryResponse = { candidates }
+  const response: DiscoveryResponse = {
+    candidates: sortCandidates(
+      filterCandidates(candidates, {
+        query,
+        profession,
+        minScore,
+        verifiedOnly,
+        topTag,
+        proofType,
+        minEndorsements,
+      }),
+      sortMode
+    ),
+  }
   return NextResponse.json(response)
 }
 

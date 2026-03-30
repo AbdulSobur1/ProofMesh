@@ -12,7 +12,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CandidateCard } from '@/components/discovery/candidate-card'
 import { DiscoveryControls } from '@/components/discovery/discovery-controls'
 import { DiscoveryCandidate, DiscoveryResponse, DiscoverySortMode } from '@/lib/types'
-import { filterCandidates, sortCandidates } from '@/lib/services/discovery'
 
 export default function DiscoverPage() {
   const [data, setData] = useState<DiscoveryResponse | null>(null)
@@ -21,6 +20,9 @@ export default function DiscoverPage() {
   const [query, setQuery] = useState('')
   const [profession, setProfession] = useState('')
   const [minScore, setMinScore] = useState(0)
+  const [topTag, setTopTag] = useState('')
+  const [proofType, setProofType] = useState('')
+  const [minEndorsements, setMinEndorsements] = useState(0)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [sortMode, setSortMode] = useState<DiscoverySortMode>('trust')
   const [savingCandidateId, setSavingCandidateId] = useState<string | null>(null)
@@ -29,7 +31,17 @@ export default function DiscoverPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/discovery', { cache: 'no-store' })
+      const searchParams = new URLSearchParams()
+      if (query.trim()) searchParams.set('query', query.trim())
+      if (profession) searchParams.set('profession', profession)
+      if (minScore > 0) searchParams.set('minScore', String(minScore))
+      if (verifiedOnly) searchParams.set('verifiedOnly', 'true')
+      if (topTag.trim()) searchParams.set('topTag', topTag.trim())
+      if (proofType) searchParams.set('proofType', proofType)
+      if (minEndorsements > 0) searchParams.set('minEndorsements', String(minEndorsements))
+      searchParams.set('sortMode', sortMode)
+
+      const response = await fetch(`/api/discovery?${searchParams.toString()}`, { cache: 'no-store' })
       if (!response.ok) {
         throw new Error('Failed to load discovery data')
       }
@@ -40,18 +52,13 @@ export default function DiscoverPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [minEndorsements, minScore, profession, proofType, query, sortMode, topTag, verifiedOnly])
 
   useEffect(() => {
     load()
   }, [load])
 
   const candidates = useMemo(() => data?.candidates ?? [], [data])
-  const filteredCandidates = useMemo(
-    () => sortCandidates(filterCandidates(candidates, { query, profession, minScore, verifiedOnly }), sortMode),
-    [candidates, minScore, profession, query, sortMode, verifiedOnly]
-  )
-
   const totals = useMemo(() => {
     return candidates.reduce(
       (acc, candidate) => {
@@ -173,6 +180,12 @@ export default function DiscoverPage() {
               onProfessionChange={setProfession}
               minScore={minScore}
               onMinScoreChange={setMinScore}
+              topTag={topTag}
+              onTopTagChange={setTopTag}
+              proofType={proofType}
+              onProofTypeChange={setProofType}
+              minEndorsements={minEndorsements}
+              onMinEndorsementsChange={setMinEndorsements}
               verifiedOnly={verifiedOnly}
               onVerifiedOnlyChange={setVerifiedOnly}
               sortMode={sortMode}
@@ -184,7 +197,7 @@ export default function DiscoverPage() {
             <div className="mb-5 flex items-center gap-3">
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">Candidate results</h2>
               <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
-                {isLoading ? 'Loading…' : `${filteredCandidates.length} shown`}
+                {isLoading ? 'Loading…' : `${candidates.length} shown`}
               </Badge>
             </div>
 
@@ -196,7 +209,7 @@ export default function DiscoverPage() {
                   <Skeleton key={index} className="h-[260px] w-full rounded-[2rem]" />
                 ))}
               </div>
-            ) : filteredCandidates.length === 0 ? (
+            ) : candidates.length === 0 ? (
               <Card className="rounded-[2rem] border border-dashed border-border/60 p-12 text-center">
                 <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Users className="size-8" />
@@ -208,7 +221,7 @@ export default function DiscoverPage() {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {filteredCandidates.map((candidate) => (
+                {candidates.map((candidate) => (
                   <CandidateCard
                     key={candidate.id}
                     candidate={candidate}

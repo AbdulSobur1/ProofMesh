@@ -23,9 +23,14 @@ export const filterCandidates = (
     profession: string
     minScore: number
     verifiedOnly: boolean
+    minEndorsements?: number
+    topTag?: string
+    proofType?: string
   }
 ) => {
   const normalizedQuery = options.query.trim().toLowerCase()
+  const normalizedTopTag = (options.topTag ?? '').trim().toLowerCase()
+  const normalizedProofType = (options.proofType ?? '').trim().toLowerCase()
 
   return candidates.filter((candidate) => {
     const searchableValues = [
@@ -42,8 +47,12 @@ export const filterCandidates = (
     const matchesProfession = !options.profession || candidate.primaryProfession === options.profession
     const matchesScore = candidate.reputation.averageScore >= options.minScore
     const matchesVerified = !options.verifiedOnly || candidate.reputation.verifiedProofs > 0
+    const matchesEndorsements = candidate.reputation.endorsementCount >= (options.minEndorsements ?? 0)
+    const matchesTopTag = !normalizedTopTag || candidate.topTags.some((tag) => tag.toLowerCase().includes(normalizedTopTag))
+    const matchesProofType =
+      !normalizedProofType || candidate.proofTypes.some((proofType) => proofType.toLowerCase() === normalizedProofType)
 
-    return matchesQuery && matchesProfession && matchesScore && matchesVerified
+    return matchesQuery && matchesProfession && matchesScore && matchesVerified && matchesEndorsements && matchesTopTag && matchesProofType
   })
 }
 

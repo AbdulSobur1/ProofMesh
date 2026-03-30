@@ -13,6 +13,12 @@ interface DiscoveryControlsProps {
   onProfessionChange: (value: string) => void
   minScore: number
   onMinScoreChange: (value: number) => void
+  topTag: string
+  onTopTagChange: (value: string) => void
+  proofType: string
+  onProofTypeChange: (value: string) => void
+  minEndorsements: number
+  onMinEndorsementsChange: (value: number) => void
   verifiedOnly: boolean
   onVerifiedOnlyChange: (value: boolean) => void
   sortMode: DiscoverySortMode
@@ -26,6 +32,12 @@ export function DiscoveryControls({
   onProfessionChange,
   minScore,
   onMinScoreChange,
+  topTag,
+  onTopTagChange,
+  proofType,
+  onProofTypeChange,
+  minEndorsements,
+  onMinEndorsementsChange,
   verifiedOnly,
   onVerifiedOnlyChange,
   sortMode,
@@ -97,6 +109,38 @@ export function DiscoveryControls({
           <ShieldCheck className="size-4" />
           Trusted only
         </Button>
+
+        <Input
+          value={topTag}
+          onChange={(event) => onTopTagChange(event.target.value)}
+          placeholder="Filter by tag"
+          className="h-10 w-40 bg-background/70"
+        />
+
+        <select
+          value={proofType}
+          onChange={(event) => onProofTypeChange(event.target.value)}
+          className="h-10 rounded-xl border border-border/60 bg-background/70 px-3 text-sm text-foreground outline-none"
+        >
+          <option value="">Any proof type</option>
+          <option value="project">Project</option>
+          <option value="case_study">Case study</option>
+          <option value="code_sample">Code sample</option>
+          <option value="portfolio">Portfolio</option>
+          <option value="campaign">Campaign</option>
+          <option value="analysis">Analysis</option>
+        </select>
+
+        <select
+          value={minEndorsements}
+          onChange={(event) => onMinEndorsementsChange(Number(event.target.value))}
+          className="h-10 rounded-xl border border-border/60 bg-background/70 px-3 text-sm text-foreground outline-none"
+        >
+          <option value={0}>Any endorsements</option>
+          <option value={1}>1+ endorsements</option>
+          <option value={3}>3+ endorsements</option>
+          <option value={5}>5+ endorsements</option>
+        </select>
       </div>
     </div>
   )

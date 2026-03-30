@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Bell, BookmarkCheck, BriefcaseBusiness, Building2, CheckSquare, Compass, Mail, Newspaper, Plus, Target, User, Users } from 'lucide-react'
+import { BarChart3, Bell, BookmarkCheck, BriefcaseBusiness, Building2, CheckSquare, Compass, Mail, Newspaper, Plus, Search, Target, User, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useProofs } from '@/lib/proof-context'
 
@@ -21,6 +21,11 @@ export function Sidebar() {
       href: '/discover',
       label: 'Discover Talent',
       icon: Compass,
+    },
+    {
+      href: '/search',
+      label: 'Search',
+      icon: Search,
     },
     {
       href: '/discover/saved',
