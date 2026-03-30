@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, PlusCircle, Target, Users } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, Building2, PlusCircle, Target, Users } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/dashboard/top-bar'
 import { Card } from '@/components/ui/card'
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PROFESSION_LABELS, PROOF_PROFESSIONS, PROOF_TYPE_LABELS, PROOF_TYPES, type ProofProfession, type ProofType } from '@/lib/proof-taxonomy'
-import { JobApplication, JobApplicationsResponse, JobMatchResponse, JobPost, JobPostsResponse } from '@/lib/types'
+import { CompanyProfile, JobApplication, JobApplicationsResponse, JobMatchResponse, JobPost, JobPostsResponse } from '@/lib/types'
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<JobPost[]>([])
@@ -26,6 +26,7 @@ export default function JobsPage() {
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [applications, setApplications] = useState<JobApplication[]>([])
+  const [company, setCompany] = useState<CompanyProfile | null>(null)
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -54,6 +55,21 @@ export default function JobsPage() {
   useEffect(() => {
     loadJobs()
   }, [loadJobs])
+
+  useEffect(() => {
+    const loadCompany = async () => {
+      try {
+        const response = await fetch('/api/companies', { cache: 'no-store' })
+        if (!response.ok) return
+        const payload = (await response.json()) as { company: CompanyProfile | null }
+        setCompany(payload.company)
+      } catch {
+        setCompany(null)
+      }
+    }
+
+    loadCompany()
+  }, [])
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -220,6 +236,18 @@ export default function JobsPage() {
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
                   Turn recruiter intent into structured job profiles with target tags, preferred proof formats, and minimum quality thresholds.
                 </p>
+                {company ? (
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground">
+                    <Building2 className="size-3.5 text-primary" />
+                    Hiring as {company.name}
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/company">Set up company profile</Link>
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-3">
@@ -313,6 +341,9 @@ export default function JobsPage() {
                     <button key={job.id} type="button" onClick={() => setSelectedJobId(job.id)} className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${selectedJobId === job.id ? 'border-primary/30 bg-primary/10' : 'border-border/60 bg-background/70 hover:border-primary/20'}`}>
                       <p className="text-sm font-semibold text-foreground">{job.title}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{PROFESSION_LABELS[job.profession as ProofProfession] ?? job.profession}</p>
+                      {job.company ? (
+                        <p className="mt-1 text-xs text-muted-foreground">{job.company.name}</p>
+                      ) : null}
                     </button>
                   ))}
                 </div>
@@ -352,6 +383,11 @@ export default function JobsPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge variant="secondary" className="border border-primary/20 bg-primary/10 text-primary">{match.matchScore}% match</Badge>
                             <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">{PROFESSION_LABELS[(match.candidate.primaryProfession ?? selectedJob.profession) as ProofProfession] ?? match.candidate.primaryProfession ?? 'Multi-disciplinary'}</Badge>
+                            {selectedJob.company ? (
+                              <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
+                                {selectedJob.company.name}
+                              </Badge>
+                            ) : null}
                           </div>
                           <h3 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">{match.candidate.username}</h3>
                           <p className="mt-2 text-sm leading-6 text-muted-foreground">{match.candidate.strongestProof ? `Strongest proof: ${match.candidate.strongestProof.title}` : 'No strongest proof available yet.'}</p>

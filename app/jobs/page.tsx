@@ -138,6 +138,9 @@ export default function JobsBoardPage() {
                       }`}
                     >
                       <p className="text-sm font-semibold text-foreground">{job.title}</p>
+                      {job.company ? (
+                        <p className="mt-1 text-xs font-medium text-foreground/85">{job.company.name}</p>
+                      ) : null}
                       <p className="mt-1 text-xs text-muted-foreground">
                         {PROFESSION_LABELS[job.profession as ProofProfession] ?? job.profession}
                       </p>
@@ -164,11 +167,26 @@ export default function JobsBoardPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-2xl font-semibold tracking-tight text-foreground">{selectedJob.title}</h2>
+                      {selectedJob.company ? (
+                        <Badge variant="secondary" className="border border-border/60 bg-background/70 text-foreground">
+                          {selectedJob.company.name}
+                        </Badge>
+                      ) : null}
                       <Badge variant="outline" className="border-border/60 bg-background/60 text-muted-foreground">
                         {PROFESSION_LABELS[selectedJob.profession as ProofProfession] ?? selectedJob.profession}
                       </Badge>
                     </div>
+                    {selectedJob.company?.tagline ? (
+                      <p className="mt-2 text-sm text-muted-foreground">{selectedJob.company.tagline}</p>
+                    ) : null}
                     <p className="mt-4 text-sm leading-7 text-muted-foreground">{selectedJob.description}</p>
+                    {selectedJob.company ? (
+                      <div className="mt-4">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/company/${encodeURIComponent(selectedJob.company.slug)}`}>View company page</Link>
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="grid gap-6 md:grid-cols-2">

@@ -24,6 +24,19 @@ export const toJobPostDto = (job: {
   targetTags: string
   preferredProofTypes: string
   minScore: number
+  company?: {
+    id: string
+    slug: string
+    name: string
+    tagline: string | null
+    description: string | null
+    websiteUrl: string | null
+    location: string | null
+    logoUrl: string | null
+    industry: string | null
+    createdAt: Date
+    updatedAt: Date
+  } | null
   createdAt: Date
   updatedAt: Date
 }): JobPost => ({
@@ -34,6 +47,21 @@ export const toJobPostDto = (job: {
   targetTags: parseStringArray(job.targetTags),
   preferredProofTypes: parseStringArray(job.preferredProofTypes),
   minScore: job.minScore,
+  company: job.company
+    ? {
+        id: job.company.id,
+        slug: job.company.slug,
+        name: job.company.name,
+        tagline: job.company.tagline,
+        description: job.company.description,
+        websiteUrl: job.company.websiteUrl,
+        location: job.company.location,
+        logoUrl: job.company.logoUrl,
+        industry: job.company.industry,
+        createdAt: job.company.createdAt.toISOString(),
+        updatedAt: job.company.updatedAt.toISOString(),
+      }
+    : null,
   createdAt: job.createdAt.toISOString(),
   updatedAt: job.updatedAt.toISOString(),
 })

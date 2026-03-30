@@ -33,9 +33,45 @@ model User {
   sentMessages        Message[]
   posts               Post[]
   jobApplications     JobApplication[]
+  ownedCompanies      Company[]        @relation("CompanyOwner")
+  companyMemberships  CompanyMember[]
   savedCandidates     SavedCandidate[] @relation("RecruiterSavedCandidates")
   candidateShortlists SavedCandidate[] @relation("CandidateSavedByRecruiters")
   jobs                JobPost[]
+}
+
+model Company {
+  id             String          @id @default(cuid())
+  slug           String          @unique
+  name           String
+  tagline        String?
+  description    String?
+  websiteUrl     String?
+  location       String?
+  logoUrl        String?
+  industry       String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  ownerId        String
+  owner          User            @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members        CompanyMember[]
+  jobs           JobPost[]
+
+  @@index([ownerId])
+  @@index([name])
+}
+
+model CompanyMember {
+  id          String   @id @default(cuid())
+  role        String   @default("admin")
+  createdAt   DateTime @default(now())
+  companyId   String
+  userId      String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@index([userId])
 }
 
 model Connection {
@@ -231,7 +267,9 @@ model JobPost {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   recruiterId         String
+  companyId           String?
   recruiter           User     @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  company             Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   applications        JobApplication[]
 
   @@index([recruiterId])

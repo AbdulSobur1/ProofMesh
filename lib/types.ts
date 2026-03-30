@@ -252,6 +252,20 @@ export type FeedResponse = {
   posts: FeedPost[]
 }
 
+export type CompanyProfile = {
+  id: string
+  slug: string
+  name: string
+  tagline: string | null
+  description: string | null
+  websiteUrl: string | null
+  location: string | null
+  logoUrl: string | null
+  industry: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export type EditWorkExperienceInput = {
   id: string
   title: string
@@ -363,6 +377,7 @@ export type JobPost = {
   targetTags: string[]
   preferredProofTypes: string[]
   minScore: number
+  company: CompanyProfile | null
   createdAt: string
   updatedAt: string
 }
@@ -400,4 +415,9 @@ export type CandidateJobsResponse = {
 export type JobApplicationsResponse = {
   job: JobPost
   applications: JobApplication[]
+}
+
+export type CompanyResponse = {
+  company: CompanyProfile | null
+  jobs: JobPost[]
 }

@@ -26,6 +26,9 @@ export async function GET(request: Request) {
   const jobs = await prisma.jobPost.findMany({
     where: { recruiterId },
     orderBy: { createdAt: 'desc' },
+    include: {
+      company: true,
+    },
   })
 
   const response: JobPostsResponse = {
@@ -56,6 +59,23 @@ export async function POST(request: Request) {
         targetTags: serializeStringArray(input.targetTags),
         preferredProofTypes: serializeStringArray(input.preferredProofTypes),
         minScore: input.minScore,
+        companyId:
+          (
+            await prisma.companyMember.findFirst({
+              where: {
+                userId: recruiterId,
+              },
+              select: {
+                companyId: true,
+              },
+              orderBy: {
+                createdAt: 'asc',
+              },
+            })
+          )?.companyId ?? null,
+      },
+      include: {
+        company: true,
       },
     })
 
