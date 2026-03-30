@@ -3,7 +3,7 @@ import { getToken } from 'next-auth/jwt'
 
 const authenticatedPages = ['/dashboard', '/discover', '/submit', '/profile', '/proof']
 const publicAuthPages = ['/', '/login', '/signup']
-const protectedApiPrefixes = ['/api/discovery', '/api/profile', '/api/proofs', '/api/reputation']
+const protectedApiPrefixes = ['/api/discovery', '/api/jobs', '/api/profile', '/api/proofs', '/api/reputation']
 const authApiPrefixes = ['/api/auth']
 
 function isMatch(pathname: string, prefixes: string[]) {
@@ -57,6 +57,7 @@ export const config = {
     '/profile/:path*',
     '/proof/:path*',
     '/api/discovery/:path*',
+    '/api/jobs/:path*',
     '/api/profile/:path*',
     '/api/proofs/:path*',
     '/api/reputation/:path*',
