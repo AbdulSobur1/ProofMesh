@@ -1,4 +1,4 @@
-import OpenAI from 'openai'
+import { GoogleGenAI } from '@google/genai'
 import { PROFESSION_LABELS, PROOF_TYPE_LABELS, type ProofProfession, type ProofType } from '@/lib/proof-taxonomy'
 
 export interface EvaluationResult {
@@ -91,9 +91,9 @@ const mockEvaluation = (profession: ProofProfession): EvaluationResult => {
 
 const shouldAllowMockEvaluation = () => process.env.OPENAI_ALLOW_MOCK === 'true'
 
-const getOpenAIConfig = () => {
-  const apiKey = process.env.OPENAI_API_KEY?.trim()
-  const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini'
+const getGeminiConfig = () => {
+  const apiKey = process.env.GEMINI_API_KEY?.trim()
+  const model = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash'
 
   if (!apiKey) {
     if (shouldAllowMockEvaluation()) {
@@ -105,7 +105,7 @@ const getOpenAIConfig = () => {
     }
 
     throw new AIConfigurationError(
-      'OpenAI is not configured. Set OPENAI_API_KEY, or set OPENAI_ALLOW_MOCK=true for local mock evaluation.'
+      'Gemini is not configured. Set GEMINI_API_KEY, or set OPENAI_ALLOW_MOCK=true for local mock evaluation.'
     )
   }
 
@@ -150,34 +150,25 @@ export const evaluateProof = async (input: {
   proofType: ProofType
   outcomeSummary?: string | null
 }): Promise<EvaluationResult> => {
-  const config = getOpenAIConfig()
+  const config = getGeminiConfig()
 
   if (!config.apiKey) {
     return mockEvaluation(input.profession)
   }
 
   try {
-    const openai = new OpenAI({
-      apiKey: config.apiKey,
-    })
+    const ai = new GoogleGenAI({ apiKey: config.apiKey })
 
-    const response = await openai.chat.completions.create({
+    const response = await ai.models.generateContent({
       model: config.model,
-      temperature: 0.2,
-      messages: [
-        {
-          role: 'system',
-          content: 'Return JSON only. Do not include markdown or code fences.',
-        },
-        {
-          role: 'user',
-          content: buildPrompt(input),
-        },
-      ],
-      response_format: { type: 'json_object' },
+      contents: buildPrompt(input),
+      config: {
+        temperature: 0.2,
+        responseMimeType: 'application/json',
+      },
     })
 
-    const content = response.choices[0]?.message?.content
+    const content = response.text
     if (!content) {
       throw new AIEvaluationError('The AI response was empty.')
     }
@@ -193,6 +184,6 @@ export const evaluateProof = async (input: {
       throw error
     }
 
-    throw new AIEvaluationError('OpenAI evaluation is temporarily unavailable.')
+    throw new AIEvaluationError('Gemini evaluation is temporarily unavailable.')
   }
 }
